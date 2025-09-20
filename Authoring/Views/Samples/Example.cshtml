@@ -9,14 +9,5 @@ Welcome to the @Model.Name Zoo. We're very glad that you were able to make it. P
 Here is a list of our current employees:
 @foreach (var staffMember in Model.Staff)
 {
-@:- Employee:
-@:  @(Partial("_staff.cshtml", staffMember, options: new SadRazorEngine.Runtime.PartialOptions(){ InheritColumn = true}))
+@:- @(Partial("_staff.cshtml", staffMember, options: new SadRazorEngine.Runtime.PartialOptions(){ InheritColumn = true}))
 }
-
-@* Example: explicit indent amount (useful from non-call-site scenarios or previews) *@
-@* @(await PartialAsync("_staff.cshtml", options: new SadRazorEngine.Runtime.PartialOptions { IndentAmount = 4 })) *@
-
-@* Note: the static helper TemplateHelpers.Partial/PartialAsync can be used here as well,
-   but InheritColumn is only honored when the partial is invoked from a compiled template
-   instance (TemplateBase) because it relies on the writer's current column. The
-   synchronous TemplateHelpers.Partial will throw if InheritColumn is requested. *@

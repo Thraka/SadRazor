@@ -5,10 +5,11 @@ This small project helps author SadRazor templates with editor tooling (Razor/C#
 Quickstart
 
 1. Open the workspace in VS Code. The Razor language features (C# extension) will provide syntax highlighting and some IntelliSense for `.cshtml` files in this project.
-2. Edit `Authoring/Views/Samples/Example.cshtml` and `Authoring/Views/Samples/_partial.cshtml`.
+2. Add reference to your library to import types for the model.
+2. Edit `Views\*.cshtml` files, but don't touch `Views\_ViewImports.cshtml`.
 3. Preview by running:
 
-   dotnet run --project Authoring/Authoring.csproj -- Authoring/Views/Samples/Example.cshtml
+   dotnet run -- Views/Samples/Example.cshtml
 
    The rendered output will be printed to stdout.
 

@@ -14,7 +14,8 @@ if (!File.Exists(templatePath))
 }
 
 var engine = new TemplateEngine();
-var ctx = engine.LoadTemplate(templatePath);
-ctx.WithModel(Testbed.Zoo.CreateSample());
-var result = await ctx.RenderAsync();
+var result = await engine.LoadTemplate(templatePath)
+                         .WithModel(Testbed.Zoo.CreateSample())
+                         .RenderAsync();
+
 Console.WriteLine(result.Content);

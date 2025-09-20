@@ -8,12 +8,11 @@ namespace SadRazorEngine.Core.Models;
 /// </summary>
 public class TemplateContext : ITemplateContext
 {
-    private readonly ICompiledTemplate _template;
     private readonly TemplateExecutor _executor;
 
     public TemplateContext(ICompiledTemplate template)
     {
-        _template = template ?? throw new ArgumentNullException(nameof(template));
+        ArgumentNullException.ThrowIfNull(template);
         _executor = new TemplateExecutor(template);
     }
 

@@ -20,7 +20,7 @@ namespace SadRazorEngine.Tests
 
             var rootContent = """
 # Title
-@include "_partial.md"
+@(await PartialAsync("_partial.md"))
 End
 """;
             await File.WriteAllTextAsync(root, rootContent);
@@ -72,10 +72,10 @@ End
 
             await File.WriteAllTextAsync(inner, "Inner content");
             await File.WriteAllTextAsync(main, """
-@include "sub/inner.md"
+@(await PartialAsync("sub/inner.md"))
 """);
             await File.WriteAllTextAsync(root, """
-@include "main.md"
+@(await PartialAsync("main.md"))
 """);
 
             var engine = new SadRazorEngine.TemplateEngine();

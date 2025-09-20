@@ -1,3 +1,4 @@
+using System.CommandLine;
 using FluentAssertions;
 using SadRazor.Cli.Commands;
 using Xunit;

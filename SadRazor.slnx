@@ -2,10 +2,12 @@
   <Folder Name="/Files/">
     <File Path="PLAN.md" />
   </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/SadRazorCli.Tests/SadRazorCli.Tests.csproj" />
+    <Project Path="Tests/SadRazorEngine.Tests/SadRazorEngine.Tests.csproj" />
+  </Folder>
   <Project Path="Authoring/Authoring.csproj" />
   <Project Path="SadRazor.Cli/SadRazor.Cli.csproj" />
   <Project Path="c:/Code/Fun/SadRazor/SadRazorEngine/SadRazorEngine.csproj" />
   <Project Path="c:/Code/Fun/SadRazor/Testbed/Testbed.csproj" />
-  <Project Path="c:/Code/Fun/SadRazor/Tests/SadRazorEngine.Tests/SadRazorEngine.Tests.csproj" />
-  <Project Path="c:/Code/Fun/SadRazor/Tests/SadRazor.Cli.Tests/SadRazor.Cli.Tests.csproj" />
 </Solution>

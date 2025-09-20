@@ -6,4 +6,5 @@ public interface ITemplateContext
 {
     ITemplateContext WithModel<T>(T model);
     Task<TemplateResult> RenderAsync();
+    Task<ValidationResult> ValidateAsync();
 }

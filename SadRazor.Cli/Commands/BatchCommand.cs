@@ -3,6 +3,7 @@ using System.CommandLine.Invocation;
 using SadRazor.Cli.Models;
 using SadRazor.Cli.Services;
 using SadRazorEngine;
+using SadRazorEngine.Extensions;
 
 namespace SadRazor.Cli.Commands;
 
@@ -354,7 +355,7 @@ public class BatchCommand : Command
         {
             // For now, use a simple implementation
             // In a full implementation, you'd use a proper glob library
-            var extensions = ModelLoader.GetSupportedExtensions();
+            var extensions = new[] { ".json", ".yml", ".yaml", ".xml" };
             
             foreach (var ext in extensions)
             {
@@ -380,7 +381,7 @@ public class BatchCommand : Command
         bool verbose)
     {
         var results = new List<BatchResult>();
-        var engine = new TemplateEngine();
+        var engine = new TemplateEngine(enableCaching: true);
 
         if (parallel)
         {
@@ -427,13 +428,12 @@ public class BatchCommand : Command
                 Console.WriteLine($"Processing: {modelDisplay}");
             }
 
-            // Load model
-            var model = await ModelLoader.LoadFromFileAsync(modelPath);
+            // Load template and model using engine's capabilities
+            var context = engine.LoadTemplate(templatePath);
+            context = await context.WithModelFromFileAsync(modelPath);
 
             // Render template
-            var result = await engine.LoadTemplate(templatePath)
-                .WithModel(model)
-                .RenderAsync();
+            var result = await context.RenderAsync();
 
             // Write output
             await OutputManager.WriteFileAsync(outputPath, result.Content, force);

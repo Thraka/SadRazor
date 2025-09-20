@@ -84,6 +84,17 @@ namespace SadRazorEngine.Runtime
         }
 
         /// <summary>
+        /// Synchronously renders a partial conditionally - only if condition is true
+        /// </summary>
+        public static string PartialIf(string path, bool condition, object? model = null, PartialOptions? options = null)
+        {
+            if (!condition)
+                return string.Empty;
+
+            return Partial(path, model, options);
+        }
+
+        /// <summary>
         /// Asynchronously renders a partial by resolving <paramref name="path"/>. Behaves
         /// identically to <see cref="Partial(string,object,PartialOptions)"/> with respect to
         /// the <see cref="PartialOptions"/> semantics and limitations.
@@ -127,6 +138,17 @@ namespace SadRazorEngine.Runtime
             }
 
             return content;
+        }
+
+        /// <summary>
+        /// Asynchronously renders a partial conditionally - only if condition is true
+        /// </summary>
+        public static async Task<string> PartialIfAsync(string path, bool condition, object? model = null, PartialOptions? options = null)
+        {
+            if (!condition)
+                return string.Empty;
+
+            return await PartialAsync(path, model, options);
         }
 
         /// <summary>

@@ -135,6 +135,18 @@ public abstract class TemplateBase<TModel>
     }
 
     /// <summary>
+    /// Renders a partial template asynchronously, but only if the condition is true.
+    /// If condition is false, returns an empty string.
+    /// </summary>
+    public async Task<string> PartialIfAsync(string relativePath, bool condition, object? model = null, PartialOptions? options = null)
+    {
+        if (!condition)
+            return string.Empty;
+
+        return await PartialAsync(relativePath, model, options);
+    }
+
+    /// <summary>
     /// Synchronously renders a partial template (by delegating to the engine) and returns the
     /// rendered content. Accepts <see cref="PartialOptions"/> to request explicit indentation.
     /// When <see cref="PartialOptions.InheritColumn"/> is specified this method will apply the
@@ -191,6 +203,18 @@ public abstract class TemplateBase<TModel>
         }
 
         return content;
+    }
+
+    /// <summary>
+    /// Renders a partial template synchronously, but only if the condition is true.
+    /// If condition is false, returns an empty string.
+    /// </summary>
+    public string PartialIf(string relativePath, bool condition, object? model = null, PartialOptions? options = null)
+    {
+        if (!condition)
+            return string.Empty;
+
+        return Partial(relativePath, model, options);
     }
 
     /// <summary>

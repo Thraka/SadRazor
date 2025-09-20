@@ -3,6 +3,7 @@ using System.CommandLine.Invocation;
 using SadRazor.Cli.Models;
 using SadRazor.Cli.Services;
 using SadRazorEngine;
+using SadRazorEngine.Extensions;
 
 namespace SadRazor.Cli.Commands;
 
@@ -216,7 +217,7 @@ public class WatchCommand : Command
                 }
             }
 
-            var engine = new TemplateEngine();
+            var engine = new TemplateEngine(enableCaching: true);
             var processingQueue = new HashSet<string>();
             var queueLock = new object();
 
@@ -386,11 +387,10 @@ public class WatchCommand : Command
     {
         try
         {
-            var model = await ModelLoader.LoadFromFileAsync(modelPath);
+            var context = engine.LoadTemplate(templatePath);
+            context = await context.WithModelFromFileAsync(modelPath);
             
-            var result = await engine.LoadTemplate(templatePath)
-                .WithModel(model)
-                .RenderAsync();
+            var result = await context.RenderAsync();
 
             var outputPath = explicitOutputPath ?? OutputManager.GenerateOutputPath(templatePath, modelPath, null, outputDirectory);
             await OutputManager.WriteFileAsync(outputPath, result.Content, force);

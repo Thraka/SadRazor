@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Dynamic;
 using System.Text.Json;
 using System.Xml;
@@ -5,12 +6,12 @@ using Newtonsoft.Json;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace SadRazor.Cli.Services;
+namespace SadRazorEngine.Core.Services;
 
 /// <summary>
-/// Service for loading model data from various file formats
+/// Service for loading model data from various formats (JSON, YAML, XML)
 /// </summary>
-public class ModelLoader
+public static class ModelLoader
 {
     private static readonly IDeserializer _yamlDeserializer = new DeserializerBuilder()
         .WithNamingConvention(CamelCaseNamingConvention.Instance)
@@ -33,26 +34,6 @@ public class ModelLoader
             ".yml" or ".yaml" => LoadFromYaml(content),
             ".xml" => LoadFromXml(content),
             _ => throw new NotSupportedException($"Unsupported model file format: {extension}")
-        };
-    }
-
-    /// <summary>
-    /// Load model from file with specified format
-    /// </summary>
-    public static async Task<object?> LoadFromFileAsync(string filePath, string format)
-    {
-        if (!File.Exists(filePath))
-            throw new FileNotFoundException($"Model file not found: {filePath}");
-
-        var content = await File.ReadAllTextAsync(filePath);
-
-        return format.ToLowerInvariant() switch
-        {
-            "json" => LoadFromJson(content),
-            "yaml" or "yml" => LoadFromYaml(content),
-            "xml" => LoadFromXml(content),
-            "auto" => await LoadFromFileAsync(filePath), // Recurse with auto-detection
-            _ => throw new NotSupportedException($"Unsupported model format: {format}")
         };
     }
 
@@ -179,10 +160,12 @@ public class ModelLoader
 
         try
         {
-            // Convert XML to JSON first, then deserialize to T
             var doc = new XmlDocument();
             doc.LoadXml(xmlContent);
-            var json = JsonConvert.SerializeXmlNode(doc.DocumentElement);
+            var expandoObject = XmlToExpandoObject(doc.DocumentElement);
+            
+            // Convert ExpandoObject to strongly-typed model
+            var json = JsonConvert.SerializeObject(expandoObject);
             return JsonConvert.DeserializeObject<T>(json);
         }
         catch (Exception ex)
@@ -192,70 +175,69 @@ public class ModelLoader
     }
 
     /// <summary>
-    /// Convert XML node to ExpandoObject for dynamic access
+    /// Convert XML element to ExpandoObject
     /// </summary>
-    private static ExpandoObject? XmlToExpandoObject(XmlNode? node)
+    private static ExpandoObject? XmlToExpandoObject(XmlElement? element)
     {
-        if (node == null) return null;
+        if (element == null)
+            return null;
 
         var expando = new ExpandoObject();
-        var dict = (IDictionary<string, object>)expando;
+        var expandoDict = (IDictionary<string, object?>)expando;
 
-        // Add attributes
-        if (node.Attributes != null)
+        // Handle attributes
+        foreach (XmlAttribute attr in element.Attributes)
         {
-            foreach (XmlAttribute attr in node.Attributes)
-            {
-                dict[$"@{attr.Name}"] = attr.Value;
-            }
+            expandoDict[attr.Name] = attr.Value;
         }
 
-        // Add child nodes
-        var groups = node.ChildNodes.Cast<XmlNode>()
-            .Where(n => n.NodeType == XmlNodeType.Element)
-            .GroupBy(n => n.Name);
+        // Handle child elements
+        var childElementGroups = element.ChildNodes.OfType<XmlElement>()
+            .GroupBy(e => e.Name);
 
-        foreach (var group in groups)
+        foreach (var group in childElementGroups)
         {
-            var items = group.ToList();
-            if (items.Count == 1)
+            var elements = group.ToList();
+            if (elements.Count == 1)
             {
-                var child = XmlToExpandoObject(items[0]);
-                if (child != null)
-                    dict[items[0].Name] = child;
+                var child = elements[0];
+                if (child.HasChildNodes && child.ChildNodes.OfType<XmlElement>().Any())
+                {
+                    expandoDict[child.Name] = XmlToExpandoObject(child);
+                }
+                else
+                {
+                    expandoDict[child.Name] = child.InnerText;
+                }
             }
             else
             {
-                var array = items.Select(XmlToExpandoObject).Where(x => x != null).ToArray();
-                if (array.Length > 0)
-                    dict[items[0].Name] = array;
+                // Multiple elements with the same name - create an array
+                var array = new List<object?>();
+                foreach (var child in elements)
+                {
+                    if (child.HasChildNodes && child.ChildNodes.OfType<XmlElement>().Any())
+                    {
+                        array.Add(XmlToExpandoObject(child));
+                    }
+                    else
+                    {
+                        array.Add(child.InnerText);
+                    }
+                }
+                expandoDict[group.Key] = array;
             }
         }
 
-        // Add text content if no child elements
-        if (!node.HasChildNodes || node.ChildNodes.Cast<XmlNode>().All(n => n.NodeType != XmlNodeType.Element))
+        // Handle text content
+        if (!element.HasChildNodes || !element.ChildNodes.OfType<XmlElement>().Any())
         {
-            if (!string.IsNullOrWhiteSpace(node.InnerText))
-                dict["#text"] = node.InnerText;
+            if (!string.IsNullOrWhiteSpace(element.InnerText))
+            {
+                expandoDict["_text"] = element.InnerText;
+            }
         }
 
         return expando;
-    }
-
-    /// <summary>
-    /// Get supported file extensions
-    /// </summary>
-    public static string[] GetSupportedExtensions()
-    {
-        return [".json", ".yml", ".yaml", ".xml"];
-    }
-
-    /// <summary>
-    /// Check if file format is supported
-    /// </summary>
-    public static bool IsFormatSupported(string filePath)
-    {
-        var extension = Path.GetExtension(filePath).ToLowerInvariant();
-        return GetSupportedExtensions().Contains(extension);
     }
 }

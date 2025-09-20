@@ -122,7 +122,7 @@ Tests/
       - [x] **IndentationHelper**: Robust line-by-line indentation with edge case handling
       - [x] **Runtime column tracking**: `TemplateBase` tracks current column for inherit-column mode
 
-### Phase 3: More Features [NOT STARTED]
+### Phase 3: More Features [COMPLETED]
 
 - [x] The SadRazor.CLI tool that supports the following features
   - [x] Generate output to a file in an output folder
@@ -130,11 +130,11 @@ Tests/
   - [x] Batch processing where you can specify a directory with a glob pattern for the model files
   - [x] Add support for the sadrazor.json config file in the existing commands
 
-- [ ] Engine improvements
-  - [ ] Can create a model based on JSON, YML, or XML strings and files.
-  - [ ] Caching for templates
-  - [ ] Partials should support a condition parameter so templates can skip rendering partials
-  - [ ] Validation mode to ensure that the model has everything a template requires
+- [x] Engine improvements
+  - [x] **Model Loading from Data Formats**: Added `ModelLoader` service and extension methods for loading models from JSON, YAML, and XML strings/files. Includes both dynamic and strongly-typed model loading.
+  - [x] **Template Caching**: Implemented `TemplateCache` with configurable cache size, expiration time, and LRU eviction. Cache statistics available via `GetCacheStatistics()`.
+  - [x] **Conditional Partial Rendering**: Added `PartialIf` and `PartialIfAsync` methods to both `TemplateHelpers` and `TemplateBase` for conditional partial rendering.
+  - [x] **Template Validation**: Implemented validation mode with `ValidateAsync()` that attempts to render templates and captures errors for debugging model/template mismatches.
 
 ### Phase 4: Developer Experience [NOT STARTED]
 - Fluent API design
@@ -220,9 +220,14 @@ Written by @Model.Author on @Model.Date.ToShortDateString()
 4. **Indentation System** - Comprehensive support for `IndentAmount`, `InheritColumn`, and `SkipFirstLineIndent`
 5. **Authoring Experience** - VS Code Razor tooling with intellisense support
 6. **Testing Suite** - 21 passing tests covering all core functionality and edge cases
+7. **CLI Tool** - Complete command-line interface with batch processing, multiple model formats, and configuration support
+8. **Model Data Loading** - Support for JSON, YAML, and XML model loading with both dynamic and strongly-typed approaches
+9. **Template Caching** - Configurable caching system with statistics and LRU eviction for improved performance
+10. **Conditional Partials** - `PartialIf` and `PartialIfAsync` methods for conditional partial rendering
+11. **Template Validation** - Validation mode to detect model/template mismatches before deployment
 
 ### 🎯 **NEXT PRIORITIES**
-1. **Phase 3: Developer Experience** - Enhanced APIs and tooling
+1. **Phase 4: Developer Experience** - Enhanced APIs and tooling
 2. **Documentation** - Usage guides, API reference, and examples
 3. **Performance Optimization** - Benchmarking and optimization opportunities
-4. **Advanced Features** - Additional helper methods, caching improvements
+4. **Advanced Features** - Additional helper methods and workflow improvements

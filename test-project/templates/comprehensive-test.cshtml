@@ -1,0 +1,33 @@
+@{
+    var includeWarning = true;
+    var includeFooter = false;
+    var showStats = true;
+}
+
+# Project Report: @Model.ProjectName
+
+**Generated on:** @DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+
+## Summary
+
+@(await PartialIfAsync("_warning.cshtml", includeWarning))
+
+The project "@Model.ProjectName" has **@Model.TotalTasks** total tasks:
+- ✅ Completed: @Model.CompletedTasks
+- 🔄 In Progress: @Model.InProgressTasks  
+- ❌ Pending: @Model.PendingTasks
+
+@(await PartialIfAsync("_stats.cshtml", showStats, Model))
+
+## Task Details
+
+@foreach(var task in Model.Tasks) {
+@: ### @task.Title
+@: 
+@: **Status:** @task.Status  
+@: **Priority:** @task.Priority  
+@: **Description:** @task.Description
+@:
+}
+
+@(await PartialIfAsync("_footer.cshtml", includeFooter))

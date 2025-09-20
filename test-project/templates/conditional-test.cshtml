@@ -1,0 +1,12 @@
+@{
+    var showHeader = true;
+    var showFooter = false;
+}
+
+# Welcome, @Model.Name!
+
+@(await PartialIfAsync("_header.cshtml", showHeader))
+
+Your age is @Model.Age years.
+
+@(await PartialIfAsync("_footer.cshtml", showFooter))

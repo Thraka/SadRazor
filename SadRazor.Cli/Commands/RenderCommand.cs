@@ -2,6 +2,7 @@ using System.CommandLine;
 using SadRazor.Cli.Models;
 using SadRazor.Cli.Services;
 using SadRazorEngine;
+using SadRazorEngine.Extensions;
 
 namespace SadRazor.Cli.Commands;
 
@@ -149,16 +150,23 @@ public class RenderCommand : Command
                 Console.WriteLine($"Format: {options.ModelFormat}");
             }
 
-            // Load model if provided
-            object? model = null;
+            // Create template engine with caching enabled
+            var engine = new TemplateEngine(enableCaching: true);
+
+            if (options.Verbose)
+                Console.WriteLine("Compiling template...");
+
+            // Load template
+            var context = engine.LoadTemplate(options.TemplatePath!);
+
+            // Load model if provided using engine's model loading capabilities
             if (!string.IsNullOrEmpty(options.ModelPath))
             {
                 if (!File.Exists(options.ModelPath))
                 {
-                    // Try appending the model path to the model path in options
+                    // Try appending the model path to the model directory from config
                     if (config?.ModelDirectory != null && File.Exists(Path.Combine(config.ModelDirectory, options.ModelPath)))
                         options.ModelPath = Path.Combine(config.ModelDirectory, options.ModelPath);
-
                     else
                     {
                         Console.Error.WriteLine($"Error: Model file not found: {options.ModelPath}");
@@ -166,32 +174,26 @@ public class RenderCommand : Command
                     }
                 }
 
-                if (!ModelLoader.IsFormatSupported(options.ModelPath) && options.ModelFormat == "auto")
-                {
-                    Console.Error.WriteLine($"Error: Unsupported model file format: {Path.GetExtension(options.ModelPath)}");
-                    Console.Error.WriteLine($"Supported formats: {string.Join(", ", ModelLoader.GetSupportedExtensions())}");
-                    return 1;
-                }
-
                 if (options.Verbose)
                     Console.WriteLine("Loading model...");
 
-                model = await ModelLoader.LoadFromFileAsync(options.ModelPath, options.ModelFormat ?? "auto");
+                try
+                {
+                    // Use engine's model loading capabilities
+                    context = await context.WithModelFromFileAsync(options.ModelPath);
 
-                if (options.Verbose)
-                    Console.WriteLine("Model loaded successfully.");
+                    if (options.Verbose)
+                        Console.WriteLine("Model loaded successfully.");
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"Error loading model: {ex.Message}");
+                    return 1;
+                }
             }
 
-            // Create template engine
-            var engine = new TemplateEngine();
-
-            if (options.Verbose)
-                Console.WriteLine("Compiling template...");
-
-            // Load and render template
-            var result = await engine.LoadTemplate(options.TemplatePath!)
-                .WithModel(model)
-                .RenderAsync();
+            // Render template
+            var result = await context.RenderAsync();
 
             if (options.Verbose)
                 Console.WriteLine("Template rendered successfully.");

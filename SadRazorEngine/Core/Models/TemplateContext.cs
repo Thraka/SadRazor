@@ -32,6 +32,14 @@ public class TemplateContext : ITemplateContext
     {
         return _executor.ExecuteAsync();
     }
+
+    /// <summary>
+    /// Validates the template against the current model
+    /// </summary>
+    public async Task<ValidationResult> ValidateAsync()
+    {
+        return await _executor.ValidateAsync();
+    }
 }
 
 /// <summary>

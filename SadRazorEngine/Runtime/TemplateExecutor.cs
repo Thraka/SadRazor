@@ -72,4 +72,60 @@ public class TemplateExecutor
 
         return new TemplateResult(layoutContent);
     }
+
+    /// <summary>
+    /// Validates the template against the current model by attempting to render it
+    /// and capturing any errors that occur during rendering
+    /// </summary>
+    public async Task<ValidationResult> ValidateAsync()
+    {
+        var errors = new List<ValidationError>();
+        var warnings = new List<ValidationWarning>();
+
+        try
+        {
+            // Attempt to render the template to catch runtime errors
+            await _template.RenderAsync(_model);
+        }
+        catch (Exception ex)
+        {
+            // Parse different types of exceptions into validation errors
+            var error = ex switch
+            {
+                NullReferenceException => new ValidationError
+                {
+                    Message = "Null reference exception - likely accessing a property that doesn't exist in the model",
+                    Type = ValidationErrorType.ModelAccess,
+                    Code = ex.Message
+                },
+                ArgumentException => new ValidationError
+                {
+                    Message = $"Argument exception: {ex.Message}",
+                    Type = ValidationErrorType.TypeMismatch,
+                    Code = ex.Message
+                },
+                FileNotFoundException => new ValidationError
+                {
+                    Message = $"Partial template not found: {ex.Message}",
+                    Type = ValidationErrorType.PartialNotFound,
+                    Code = ex.Message
+                },
+                _ => new ValidationError
+                {
+                    Message = $"Template rendering error: {ex.Message}",
+                    Type = ValidationErrorType.Syntax,
+                    Code = ex.Message
+                }
+            };
+
+            errors.Add(error);
+        }
+
+        // Additional validation could be added here:
+        // - Check for common template patterns that might cause issues
+        // - Validate model property access patterns
+        // - Check for required model properties based on template usage
+
+        return ValidationResult.Create(errors, warnings);
+    }
 }

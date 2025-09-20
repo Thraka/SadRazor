@@ -11,7 +11,10 @@ namespace SadRazorEngine.Tests
         [Fact]
         public async Task CompileFromString_RendersCorrectly_WithAnonymousModel()
         {
-            var template = "# @Model.Title\n@Model.Content";
+            var template = """
+# @Model.Title
+@Model.Content
+""";
             var compiler = new SadRazorEngine.Compilation.RazorTemplateCompiler();
             var compiled = await compiler.CompileAsync(template);
             var context = new SadRazorEngine.Core.Models.TemplateContext(compiled);
@@ -25,7 +28,11 @@ namespace SadRazorEngine.Tests
         [Fact]
         public async Task CompileFromString_RendersCorrectly_WithTypedModel()
         {
-            var template = "@model SadRazorEngine.Tests.TypedModel\n# @Model.Title\n@Model.Content";
+            var template = """
+@model SadRazorEngine.Tests.TypedModel
+# @Model.Title
+@Model.Content
+""";
             var compiler = new SadRazorEngine.Compilation.RazorTemplateCompiler();
             var compiled = await compiler.CompileAsync(template, typeof(TypedModel));
             var context = new SadRazorEngine.Core.Models.TemplateContext(compiled);

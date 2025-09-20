@@ -18,7 +18,10 @@ namespace SadRazorEngine.Tests
         public async Task RendersSimpleTemplate_WithDynamicModel()
         {
             var tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".md");
-            var template = "# @Model.Title\n@Model.Content";
+            var template = """
+# @Model.Title
+@Model.Content
+""";
             await File.WriteAllTextAsync(tempPath, template);
 
             var engine = new SadRazorEngine.TemplateEngine();

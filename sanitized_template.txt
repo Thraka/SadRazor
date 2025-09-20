@@ -1,0 +1,10 @@
+ # @Model.Title
+
+Written by @Model.Author on @Model.Date.ToShortDateString()
+
+@Model.Content
+
+Tags:
+@foreach(var tag in Model.Tags) {
+    @: #@tag 
+}

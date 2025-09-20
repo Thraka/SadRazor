@@ -1,0 +1,8 @@
+﻿{
+  "Title": "My First SadRazor Document",
+  "Description": "This is an example document created with SadRazor templating engine.",
+  "Author": "Your Name",
+  "CreatedDate": "2025-09-19",
+  "Tags": ["sadrazor", "markdown", "template"],
+  "Content": "This content section demonstrates how to use dynamic models in your templates. You can add any data structure here and access it from your Razor templates."
+}

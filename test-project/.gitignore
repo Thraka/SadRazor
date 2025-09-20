@@ -1,0 +1,23 @@
+﻿# SadRazor output
+output/
+*.md
+
+# Temporary files
+*.tmp
+*.temp
+
+# IDE files
+.vs/
+.vscode/
+*.user
+*.suo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Cache
+.cache/

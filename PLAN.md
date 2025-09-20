@@ -44,6 +44,22 @@ SadRazorEngine/                       # Core engine project
 ├── obj/
 └── bin/
 
+SadRazor.Cli/
+├── SadRazor.Cli.csproj
+├── Program.cs (entry point)
+├── Commands/
+│   ├── RenderCommand.cs
+│   ├── WatchCommand.cs
+│   ├── InitCommand.cs (scaffold new projects)
+│   └── ValidateCommand.cs
+├── Models/
+│   ├── CliOptions.cs
+│   └── ConfigFile.cs
+└── Services/
+    ├── ModelLoader.cs (JSON/YAML/XML)
+    ├── FileWatcher.cs
+    └── OutputManager.cs
+
 Testbed/                              # Top-level sample/demo app used during development and authoring
 ├── Testbed.csproj
 ├── Program.cs                         # Small runner used to invoke templates, capture preview output, and exercise the engine
@@ -81,6 +97,7 @@ Tests/
 - TemplateExecutor: orchestrates execution of compiled templates (instantiation, model wiring, ExecuteAsync) and applies targeted post-render normalizations (for example, reversing the single-space prefix that was injected to avoid C# preprocessor collisions so Markdown headers like `#` are not indented).
 - TemplateHelpers: small static utility methods for resolving file paths and providing a synchronous partial rendering helper used by the Authoring project and other callers (convenience plumbing for demos and quick authoring scenarios).
 - Authoring project: a separate Web-SDK project included to enable Razor tooling in editors (not part of runtime), containing sample templates, `_ViewImports` and example static usings so authors get intellisense and a comfortable authoring experience in VS Code.
+- SadRazor.CLI is a reusable tool to load model data from JSON/YML/XML files, apply them to templates, and output rendered content to files.
 
 ## Implementation Progress
 
@@ -105,7 +122,20 @@ Tests/
       - [x] **IndentationHelper**: Robust line-by-line indentation with edge case handling
       - [x] **Runtime column tracking**: `TemplateBase` tracks current column for inherit-column mode
 
-### Phase 3: Developer Experience [NOT STARTED]
+### Phase 3: More Features [NOT STARTED]
+
+- [ ] The SadRazor.CLI tool that supports the following features
+  - [ ] Generate output to a file in an output folder
+  - [ ] Input a JSON, YML, or XML file as the model
+  - [ ] Batch processing where you can specify a directory with a glob pattern for the model files
+
+- [ ] Engine improvements
+  - [ ] Can create a model based on JSON, YML, or XML strings and files.
+  - [ ] Caching for templates
+  - [ ] Partials should support a condition parameter so templates can skip rendering partials
+  - [ ] Validation mode to ensure that the model has everything a template requires
+
+### Phase 4: Developer Experience [NOT STARTED]
 - Fluent API design
 - Comprehensive error handling
 - Debugging support

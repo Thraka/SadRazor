@@ -5,7 +5,7 @@ SadRazorEngine is a lightweight, Razor-based Markdown templating system that let
 
 - Razor-based templates with optional @model declarations and runtime model binding
 - Layout support: child templates can declare a @layout and the engine composes child output into the layout at render time
-- Includes and partials: load-time `@include` preprocessing plus runtime `Partial`/`PartialAsync` helpers for reusable fragments
+- Partials: runtime `Partial`/`PartialAsync` helpers for reusable fragments (no compile-time @include preprocessing)
 - Authoring ergonomics: an `Authoring` project (Microsoft.NET.Sdk.Web) is included to enable Razor tooling and editor intellisense for template authoring in VS Code
 - Helper exposure: templates get a small set of built-in helpers (via `TemplateHelpers` static helpers and instance wrappers on `TemplateBase`) so authors can call `Partial(...)` and other helpers naturally
 - Model parity: the loader/compiler attempts to detect `@model` types in templates and compile templates with the concrete model type when possible (reduces design-time vs runtime differences)
@@ -69,7 +69,7 @@ Tests/
 ```
 
 ### Responsibilities (concise)
-- TemplateEngine: load templates from disk, preprocess `@include` directives (with recursion guard), detect `@model` declarations and - when possible - resolve concrete model Types and compile templates with that type; detect and strip `@layout` directives and tee layout paths into the compiled template context. It also prepares template content (e.g. adding runtime imports) so templates authored with shorthand helpers work at runtime.
+- TemplateEngine: load templates from disk, detect `@model` declarations and - when possible - resolve concrete model Types and compile templates with that type; detect and strip `@layout` directives and tee layout paths into the compiled template context. It also prepares template content (e.g. adding runtime imports) so templates authored with shorthand helpers work at runtime. The engine intentionally does not perform compile-time inlining of fragments; authors should use the runtime `Partial`/`PartialAsync` helpers for composing reusable fragments.
 - RazorTemplateCompiler: configure the RazorProjectEngine and code generation pipeline, populate default imports (including any required static imports for runtime helpers) and generate the C# source fed to Roslyn for compilation.
 - CompiledTemplate: reflective wrapper around compiled template types; instantiates the generated template class, sets the runtime model via reflection, and injects a `TemplateBasePath` on the instance so runtime partial lookups resolve relative to the originating template file.
 - TemplateBase: runtime base class for generated templates; exposes the model to generated code, provides protected helpers such as `Partial`/`PartialAsync` (which resolve relative paths and invoke the engine to render partials), and exposes a small API surface (`GetContent`, `SetTemplateBasePath`) useful for helpers and testing.
@@ -93,8 +93,9 @@ Tests/
 ### Phase 2: Features [NEAR COMPLETE]
 - [x] Layout templates support
 - [x] Partial templates
-- [x] Include directives
-- [x] Custom Razor helpers for Markdown
+- [ ] Ability to indent partials by either:
+      - [ ] Specific amount of whitespace
+      - [ ] Inherit the column that the partial was called from (regardless of whitespace or not)
 
 ### Phase 3: Developer Experience [NOT STARTED]
 - Fluent API design

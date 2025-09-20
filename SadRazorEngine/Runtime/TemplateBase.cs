@@ -127,7 +127,8 @@ public abstract class TemplateBase<TModel>
         var indentAmount = options?.IndentAmount ?? (options?.InheritColumn == true ? CurrentColumn : 0);
         if (indentAmount > 0)
         {
-            content = ApplyIndent(content, indentAmount);
+            bool skipFirstLine = options?.SkipFirstLineIndent == true;
+            content = ApplyIndent(content, indentAmount, skipFirstLine);
         }
 
         return content;
@@ -158,15 +159,35 @@ public abstract class TemplateBase<TModel>
             model = null;
         }
 
-        var content = TemplateHelpers.Partial(resolved, model, options);
-
-        // If InheritColumn was requested via options and an explicit IndentAmount was not provided,
-        // apply current column as indent amount.
-        if (options != null && options.InheritColumn && !options.IndentAmount.HasValue)
+        // Determine the indent amount before calling the static helper
+        int indentAmount = 0;
+        if (options != null)
         {
-            var indent = CurrentColumn;
-            if (indent > 0)
-                content = ApplyIndent(content, indent);
+            if (options.IndentAmount.HasValue)
+            {
+                indentAmount = options.IndentAmount.Value;
+            }
+            else if (options.InheritColumn)
+            {
+                indentAmount = CurrentColumn;
+            }
+        }
+
+        // Create a new options object for the static helper that doesn't include InheritColumn
+        // since the static helper can't handle it and we've already computed the indent amount
+        PartialOptions? staticOptions = null;
+        if (options != null && options.IndentAmount.HasValue)
+        {
+            staticOptions = new PartialOptions { IndentAmount = options.IndentAmount };
+        }
+
+        var content = TemplateHelpers.Partial(resolved, model, staticOptions);
+
+        // Apply indentation if needed
+        if (indentAmount > 0)
+        {
+            bool skipFirstLine = options?.SkipFirstLineIndent == true;
+            content = ApplyIndent(content, indentAmount, skipFirstLine);
         }
 
         return content;
@@ -199,8 +220,8 @@ public abstract class TemplateBase<TModel>
     /// <summary>
     /// Applies indentation to the provided content using the shared helper implementation.
     /// </summary>
-    private static string ApplyIndent(string content, int indentAmount)
+    private static string ApplyIndent(string content, int indentAmount, bool skipFirstLine = false)
     {
-        return IndentationHelper.ApplyIndent(content, indentAmount);
+        return IndentationHelper.ApplyIndent(content, indentAmount, skipFirstLine);
     }
 }

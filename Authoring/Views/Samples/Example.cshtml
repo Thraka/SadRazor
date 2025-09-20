@@ -10,7 +10,7 @@ Here is a list of our current employees:
 @foreach (var staffMember in Model.Staff)
 {
 @:- Employee:
- @:@(Partial("_staff.cshtml", staffMember, options: new SadRazorEngine.Runtime.PartialOptions(){ InheritColumn = true}))
+@:  @(Partial("_staff.cshtml", staffMember, options: new SadRazorEngine.Runtime.PartialOptions(){ InheritColumn = true}))
 }
 
 @* Example: explicit indent amount (useful from non-call-site scenarios or previews) *@

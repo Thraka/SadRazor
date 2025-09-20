@@ -51,7 +51,7 @@ namespace SadRazorEngine.Tests
             var result = await engine.LoadTemplate(root).RenderAsync();
 
             // Expect the partial's first line to be prefixed by two spaces (one for the space after '-')
-            Assert.Contains("-   item1", result.Content);
+            Assert.Contains("- item1", result.Content);
             Assert.Contains("  item2", result.Content);
 
             Directory.Delete(tempDir, true);

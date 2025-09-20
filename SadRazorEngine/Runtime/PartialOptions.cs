@@ -15,5 +15,11 @@ namespace SadRazorEngine.Runtime
         /// when called from a compiled template via `TemplateBase.Partial(...)` or `TemplateBase.PartialAsync(...)`.
         /// </summary>
         public bool InheritColumn { get; set; }
+
+        /// <summary>
+        /// If true and InheritColumn is also true, skip indenting the first line of the partial.
+        /// This is useful when the partial is being inserted inline after existing content on the same line.
+        /// </summary>
+        public bool SkipFirstLineIndent { get; set; } = true;
     }
 }

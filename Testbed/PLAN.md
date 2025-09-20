@@ -45,11 +45,11 @@ SadRazorEngine/
 - [x] File output handling
 - [ ] Add error handling and validation
 
-### Phase 2: Features [NOT STARTED]
-- Layout templates support
-- Partial templates
-- Include directives
-- Custom Razor helpers for Markdown
+### Phase 2: Features [NEAR COMPLETE]
+- [x] Layout templates support
+- [x] Partial templates
+- [x] Include directives
+- [ ] Custom Razor helpers for Markdown
 
 ### Phase 3: Developer Experience [NOT STARTED]
 - Fluent API design

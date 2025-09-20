@@ -1,0 +1,15 @@
+@model Testbed.Zoo
+
+# Welcome
+
+Welcome to the @Model.Name Zoo. We're very gladd that you were able to make it. Please enjoy the facilities provided.
+
+## Employees
+
+Here is a list of our current employees:
+
+@foreach (var staffMember in Model.Staff)
+{
+@:- Employee:
+  @:@(Partial("_staff.cshtml", staffMember))
+}

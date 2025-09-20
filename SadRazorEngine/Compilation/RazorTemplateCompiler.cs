@@ -51,6 +51,7 @@ public class RazorTemplateCompiler : ITemplateCompiler
 @using System.Threading.Tasks
 @using System.Collections.Generic
 @using System.Linq
+@using static SadRazorEngine.Runtime.TemplateHelpers
 ");
         });
 

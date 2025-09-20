@@ -11,6 +11,14 @@ internal class CompiledTemplate : ICompiledTemplate
     private readonly Type _templateType;
     private readonly MethodInfo _executeMethod;
 
+    /// <summary>
+    /// Optional base directory for the template that produced this compiled type.
+    /// When set, CompiledTemplate will attempt to call SetTemplateBasePath on the
+    /// instantiated template prior to execution so the template runtime can resolve
+    /// relative paths (eg. for partials).
+    /// </summary>
+    internal string? TemplateBasePath { get; set; }
+
     public CompiledTemplate(Type templateType)
     {
         _templateType = templateType;
@@ -22,6 +30,14 @@ internal class CompiledTemplate : ICompiledTemplate
     {
         // Create an instance of the template
         var template = Activator.CreateInstance(_templateType)!;
+
+        // Attempt to set the template base path if available
+        var setBasePathMethod = _templateType.GetMethod("SetTemplateBasePath", BindingFlags.NonPublic | BindingFlags.Instance)
+            ?? _templateType.GetMethod("SetTemplateBasePath", BindingFlags.Public | BindingFlags.Instance);
+        if (setBasePathMethod != null && TemplateBasePath != null)
+        {
+            setBasePathMethod.Invoke(template, new[] { TemplateBasePath });
+        }
 
         // Use reflection to call SetModel
         var setModelMethod = _templateType.GetMethod("SetModel", BindingFlags.NonPublic | BindingFlags.Instance)

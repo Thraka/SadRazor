@@ -2,6 +2,14 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "build authoring",
+      "command": "dotnet",
+      "type": "process",
+      "args": ["build", "${workspaceFolder}/Authoring/Authoring.csproj"],
+      "problemMatcher": ["$msCompile"],
+      "group": { "kind": "build", "isDefault": false }
+    },
+    {
       "label": "Run SadRazorEngine tests",
       "type": "shell",
       "command": "dotnet test \"${workspaceFolder}/Tests/SadRazorEngine.Tests/SadRazorEngine.Tests.csproj\"",

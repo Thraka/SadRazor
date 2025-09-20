@@ -47,11 +47,24 @@ public class TemplateExecutor
         var layoutContent = File.ReadAllText(_layoutPath);
 
         // Replace common placeholders with the child content. Support:
-        // - {{RenderBody}}
-        // - {{Body}}
-        // - @RenderBody()
-        layoutContent = Regex.Replace(layoutContent, @"\{\{\s*RenderBody\s*\}\}", childContent);
-        layoutContent = Regex.Replace(layoutContent, @"\{\{\s*Body\s*\}\}", childContent);
+        // - {{RenderBody}} (when placed at the start of a line, inherit that line's leading whitespace)
+        // - {{Body}} (same as RenderBody)
+        // - @RenderBody() (inline replacement, no column inheritance)
+        layoutContent = Regex.Replace(layoutContent, @"(?m)^(?<indent>[ \t]*)\{\{\s*RenderBody\s*\}\}", m =>
+        {
+            var indent = m.Groups["indent"].Value ?? string.Empty;
+            var indented = IndentationHelper.ApplyIndent(childContent, indent.Length);
+            return indented;
+        });
+
+        layoutContent = Regex.Replace(layoutContent, @"(?m)^(?<indent>[ \t]*)\{\{\s*Body\s*\}\}", m =>
+        {
+            var indent = m.Groups["indent"].Value ?? string.Empty;
+            var indented = IndentationHelper.ApplyIndent(childContent, indent.Length);
+            return indented;
+        });
+
+        // Inline placeholder (no column inheritance)
         layoutContent = layoutContent.Replace("@RenderBody()", childContent);
 
         // Normalize any lines in the composed layout that begin with the space + '#'

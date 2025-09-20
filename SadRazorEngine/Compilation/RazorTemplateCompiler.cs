@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis.Text;
 using SadRazorEngine.Core.Interfaces;
 using System.Reflection;
 using System.Text;
+using System.Linq;
 
 namespace SadRazorEngine.Compilation;
 
@@ -45,14 +46,16 @@ public class RazorTemplateCompiler : ITemplateCompiler
                 @class.Modifiers.Add("public");
             });
 
-            // Add our template imports
-            builder.AddDefaultImports(@"
-@using System
-@using System.Threading.Tasks
-@using System.Collections.Generic
-@using System.Linq
-@using static SadRazorEngine.Runtime.TemplateHelpers
-");
+            // Add our template imports (match the editor authoring _ViewImports so runtime and design-time
+            // environments behave consistently)  
+            builder.AddDefaultImports(
+                "using System;",
+                "using System.Threading.Tasks;",
+                "using System.Collections.Generic;",
+                "using System.Linq;",
+                "using SadRazorEngine;",
+                "using SadRazorEngine.Runtime;"
+            );
         });
 
         // Setup base compilation with required references
@@ -164,6 +167,23 @@ public class RazorTemplateCompiler : ITemplateCompiler
                                          .Replace("TemplateBase<dynamic>", $"TemplateBase<{modelType.FullName}>");
         }
 
+        // Manually add using statements to the generated C# code since AddDefaultImports isn't working
+        // Insert using statements after the auto-generated comment but before the namespace
+        var usingStatements = @"using System;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
+using SadRazorEngine;
+using SadRazorEngine.Runtime;
+";
+        
+        // Find the insertion point (after #pragma warning disable but before namespace)
+        var namespaceIndex = generatedCode.IndexOf("namespace ");
+        if (namespaceIndex != -1)
+        {
+            generatedCode = generatedCode.Insert(namespaceIndex, usingStatements);  
+        }
+
         // Persist the post-processed generated C# for inspection
         if (EnableDebugWrites)
         {
@@ -193,6 +213,14 @@ public class RazorTemplateCompiler : ITemplateCompiler
             compilation = compilation.AddReferences(
                 MetadataReference.CreateFromFile(modelType.Assembly.Location));
         }
+
+        // Add references to all loaded assemblies so templates can reference types from the calling application
+        var additionalReferences = AppDomain.CurrentDomain.GetAssemblies()
+            .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
+            .Select(a => MetadataReference.CreateFromFile(a.Location))
+            .ToList();
+        
+        compilation = compilation.AddReferences(additionalReferences);
 
         using var ms = new MemoryStream();
         var result = compilation.Emit(ms);

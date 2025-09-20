@@ -8,6 +8,7 @@ namespace SadRazorEngine.Runtime;
 public abstract class TemplateBase<TModel>
 {
     private readonly StringBuilder _content = new();
+    private int _currentColumn = 0;
 
     /// <summary>
     /// The model passed to the template
@@ -26,7 +27,9 @@ public abstract class TemplateBase<TModel>
     {
         if (content != null)
         {
-            _content.Append(content);
+            var s = content.ToString();
+            _content.Append(s);
+            UpdateCurrentColumn(s);
         }
     }
 
@@ -38,6 +41,7 @@ public abstract class TemplateBase<TModel>
         if (content != null)
         {
             _content.Append(content);
+            UpdateCurrentColumn(content);
         }
     }
 
@@ -49,6 +53,8 @@ public abstract class TemplateBase<TModel>
         if (content != null)
         {
             _content.AppendLine(content.ToString());
+            // Reset column after a newline
+            _currentColumn = 0;
         }
     }
 
@@ -77,7 +83,11 @@ public abstract class TemplateBase<TModel>
     /// relative to the current template's base path; when not available the current
     /// working directory is used.
     /// </summary>
-    public async Task<string> PartialAsync(string relativePath, object? model = null)
+    /// <param name="relativePath">The relative or absolute path to the partial template.</param>
+    /// <param name="model">An optional model to pass to the partial template.</param>
+    /// <param name="options">Optional. Partial options to control indentation behavior.</param>
+    /// <returns>The rendered content of the partial template.</returns>
+    public async Task<string> PartialAsync(string relativePath, object? model = null, PartialOptions? options = null)
     {
         string resolved;
         if (Path.IsPathRooted(relativePath))
@@ -93,6 +103,15 @@ public abstract class TemplateBase<TModel>
             resolved = Path.Combine(Directory.GetCurrentDirectory(), relativePath);
         }
 
+        // Handle a common authoring mistake: passing a PartialOptions instance positionally
+        // as the 'model' argument. If model is actually a PartialOptions and options
+        // is null, treat that argument as the options value and leave model unset.
+        if (model is PartialOptions posOptions && options == null)
+        {
+            options = posOptions;
+            model = null;
+        }
+
         var engine = new SadRazorEngine.TemplateEngine();
         var ctx = engine.LoadTemplate(resolved!);
 
@@ -102,19 +121,86 @@ public abstract class TemplateBase<TModel>
             ctx = ctx.WithModel((TModel?)(object?)Model);
 
         var result = await ctx.RenderAsync();
-        return result.Content;
+        var content = result.Content;
+
+        // Determine indent amount if requested
+        var indentAmount = options?.IndentAmount ?? (options?.InheritColumn == true ? CurrentColumn : 0);
+        if (indentAmount > 0)
+        {
+            content = ApplyIndent(content, indentAmount);
+        }
+
+        return content;
     }
 
     /// <summary>
-    /// Synchronous convenience wrapper that resolves a partial path relative to the current
-    /// template base path and renders it.
+    /// Synchronously renders a partial template (by delegating to the engine) and returns the
+    /// rendered content. Accepts <see cref="PartialOptions"/> to request explicit indentation.
+    /// When <see cref="PartialOptions.InheritColumn"/> is specified this method will apply the
+    /// current <see cref="CurrentColumn"/> as the indentation amount unless an explicit
+    /// <see cref="PartialOptions.IndentAmount"/> is provided.
     /// </summary>
-    public string Partial(string relativePath, object? model = null)
+    /// <param name="relativePath">The relative or absolute path to the partial template.</param>
+    /// <param name="model">An optional model to pass to the partial template.</param>
+    /// <param name="options">Optional. Partial options to control indentation behavior.</param>
+    /// <returns>The rendered content of the partial template.</returns>
+    public string Partial(string relativePath, object? model = null, PartialOptions? options = null)
     {
         string resolved = Path.IsPathRooted(relativePath)
             ? relativePath
             : Path.Combine(_templateBasePath ?? Directory.GetCurrentDirectory(), relativePath);
 
-        return TemplateHelpers.Partial(resolved, model);
+        // When called synchronously from TemplateBase, support indent options when provided.
+        // Support positional passing of PartialOptions in the model slot (authoring convenience).
+        if (model is PartialOptions posOpt && options == null)
+        {
+            options = posOpt;
+            model = null;
+        }
+
+        var content = TemplateHelpers.Partial(resolved, model, options);
+
+        // If InheritColumn was requested via options and an explicit IndentAmount was not provided,
+        // apply current column as indent amount.
+        if (options != null && options.InheritColumn && !options.IndentAmount.HasValue)
+        {
+            var indent = CurrentColumn;
+            if (indent > 0)
+                content = ApplyIndent(content, indent);
+        }
+
+        return content;
+    }
+
+    /// <summary>
+    /// The conservative current column (character offset since last newline) of the writer.
+    /// Template code may use this value for "inherit column" indentation semantics.
+    /// </summary>
+    protected int CurrentColumn => _currentColumn;
+
+    private void UpdateCurrentColumn(string? text)
+    {
+        if (string.IsNullOrEmpty(text)) return;
+
+        // Use last newline position to determine trailing column length. Works for both LF and CRLF.
+        var lastNewline = text.LastIndexOf('\n');
+        if (lastNewline < 0)
+        {
+            _currentColumn += text.Length;
+        }
+        else
+        {
+            // Characters after the last newline
+            var after = text.Length - (lastNewline + 1);
+            _currentColumn = after;
+        }
+    }
+
+    /// <summary>
+    /// Applies indentation to the provided content using the shared helper implementation.
+    /// </summary>
+    private static string ApplyIndent(string content, int indentAmount)
+    {
+        return IndentationHelper.ApplyIndent(content, indentAmount);
     }
 }

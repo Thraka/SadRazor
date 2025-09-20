@@ -54,8 +54,7 @@ public class TemplateEngine : ITemplateEngine
 
         // Detect a @model directive so we can compile the template with a concrete model type
         Type? modelType = null;
-        var modelMatch = Regex.Match(processed, @"(?m)^\s*@model\s+(?<type>[^
-]+)");
+        var modelMatch = Regex.Match(processed, @"(?m)^\s*@model\s+(?<type>[^\r\n]+)");
         if (modelMatch.Success)
         {
             var typeName = modelMatch.Groups["type"].Value.Trim();

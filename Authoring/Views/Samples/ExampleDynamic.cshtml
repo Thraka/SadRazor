@@ -1,4 +1,4 @@
-@inherits TemplateBase<Testbed.Zoo>
+@inherits TemplateBase<dynamic>
 
 # Welcome
 
@@ -18,5 +18,4 @@ Here is a list of our current employees:
 
 @* Note: the static helper TemplateHelpers.Partial/PartialAsync can be used here as well,
    but InheritColumn is only honored when the partial is invoked from a compiled template
-   instance (TemplateBase) because it relies on the writer's current column. The
-   synchronous TemplateHelpers.Partial will throw if InheritColumn is requested. *@
+   (i.e., not when invoked from a manually-authored program loop or preview environment). *@

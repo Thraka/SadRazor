@@ -1,0 +1,9 @@
+@model Testbed.Caretaker
+Name: @Model.Name
+Employee ID: @Model.EmployeeId
+Qualifications:
+
+@foreach (var qual in Model.Qualifications)
+{
+@:- @qual
+}

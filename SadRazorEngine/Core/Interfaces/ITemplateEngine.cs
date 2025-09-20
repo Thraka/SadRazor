@@ -11,4 +11,9 @@ public interface ITemplateEngine
     /// Loads a template from a file path
     /// </summary>
     ITemplateContext LoadTemplate(string templatePath);
+
+    /// <summary>
+    /// Loads a template from raw template content
+    /// </summary>
+    ITemplateContext LoadTemplateFromContent(string templateContent);
 }

@@ -1,6 +1,8 @@
 using SadRazorEngine.Core.Interfaces;
 using SadRazorEngine.Runtime;
 using System.Reflection;
+using System.Dynamic;
+using System.Runtime.CompilerServices;
 
 namespace SadRazorEngine.Compilation;
 
@@ -25,10 +27,22 @@ internal class CompiledTemplate : ICompiledTemplate
         var setModelMethod = _templateType.GetMethod("SetModel", BindingFlags.NonPublic | BindingFlags.Instance)
             ?? throw new InvalidOperationException("Template does not have a SetModel method");
 
-        // Set the model if provided
-        if (model != null)
+        // Convert anonymous types to ExpandoObject so dynamic access from another assembly works
+        object? modelToPass = model;
+        if (model != null && IsAnonymousType(model.GetType()))
         {
-            setModelMethod.Invoke(template, new[] { model });
+            var expando = new ExpandoObject() as IDictionary<string, object?>;
+            foreach (var prop in model.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public))
+            {
+                expando[prop.Name] = prop.GetValue(model);
+            }
+            modelToPass = expando;
+        }
+
+        // Set the model if provided
+        if (modelToPass != null)
+        {
+            setModelMethod.Invoke(template, new[] { modelToPass });
         }
 
         // Execute the template (expects a Task)
@@ -40,5 +54,16 @@ internal class CompiledTemplate : ICompiledTemplate
             ?? throw new InvalidOperationException("Template does not have a GetContent method");
 
         return (string)getContentMethod.Invoke(template, null)!;
+    }
+
+    private static bool IsAnonymousType(Type type)
+    {
+        if (type == null) return false;
+
+        // Anonymous types are compiler-generated, generic, not public, and their name contains "AnonymousType"
+        return Attribute.IsDefined(type, typeof(CompilerGeneratedAttribute), false)
+            && type.IsGenericType
+            && (type.Name.Contains("AnonymousType") || type.Name.StartsWith("<>") || type.Name.StartsWith("VB$"))
+            && (type.Attributes & TypeAttributes.NotPublic) == TypeAttributes.NotPublic;
     }
 }

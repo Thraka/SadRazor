@@ -1,0 +1,16 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run SadRazorEngine tests",
+      "type": "shell",
+      "command": "dotnet test \"${workspaceFolder}/Tests/SadRazorEngine.Tests/SadRazorEngine.Tests.csproj\"",
+      "group": "test",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    }
+  ]
+}

@@ -24,6 +24,18 @@ public class TemplateEngine : ITemplateEngine
         // Read the template content
         var templateContent = File.ReadAllText(templatePath);
         
+        // Delegate to the content-based overload
+        return LoadTemplateFromContent(templateContent);
+    }
+
+    /// <summary>
+    /// Loads a template from raw template content and returns a context.
+    /// </summary>
+    public Core.Interfaces.ITemplateContext LoadTemplateFromContent(string templateContent)
+    {
+        if (string.IsNullOrEmpty(templateContent))
+            throw new ArgumentNullException(nameof(templateContent));
+
         // Compile the template without model type - it will be provided later
         var compiledTemplate = _compiler.CompileAsync(templateContent).Result;
         

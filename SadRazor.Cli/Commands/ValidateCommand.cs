@@ -1,4 +1,5 @@
 using System.CommandLine;
+using SadRazor.Cli.Models;
 using SadRazor.Cli.Services;
 using SadRazorEngine;
 
@@ -89,20 +90,43 @@ public class ValidateCommand : Command
 
         try
         {
-            if (verbose)
+            // Load configuration file if available
+            var config = await ConfigService.LoadConfigAsync();
+            var configPath = ConfigService.FindConfigFile();
+            
+            // Create CLI options object
+            var cliOptions = new ValidateOptions
             {
-                Console.WriteLine($"Validating template: {templatePath}");
-                if (!string.IsNullOrEmpty(modelPath))
-                    Console.WriteLine($"Model: {modelPath}");
-                Console.WriteLine($"Checks: Syntax={checkSyntax}, Model={checkModel}, Output={checkOutput}");
+                TemplatePath = templatePath,
+                ModelPath = modelPath,
+                CheckSyntax = checkSyntax,
+                CheckModel = checkModel,
+                CheckOutput = checkOutput,
+                Verbose = verbose
+            };
+
+            // Merge with config file settings
+            var options = ConfigService.MergeValidateOptions(cliOptions, config, configPath);
+
+            if (options.Verbose)
+            {
+                if (config != null)
+                    Console.WriteLine($"Using config file: {configPath}");
+                else
+                    Console.WriteLine("No config file found, using command line options only.");
+                
+                Console.WriteLine($"Validating template: {options.TemplatePath}");
+                if (!string.IsNullOrEmpty(options.ModelPath))
+                    Console.WriteLine($"Model: {options.ModelPath}");
+                Console.WriteLine($"Checks: Syntax={options.CheckSyntax}, Model={options.CheckModel}, Output={options.CheckOutput}");
                 Console.WriteLine();
             }
 
             // Check if template file exists
-            if (!File.Exists(templatePath))
+            if (!File.Exists(options.TemplatePath!))
             {
-                validationErrors.Add($"Template file not found: {templatePath}");
-                return ReportResults(validationErrors, validationWarnings, verbose);
+                validationErrors.Add($"Template file not found: {options.TemplatePath}");
+                return ReportResults(validationErrors, validationWarnings, options.Verbose);
             }
 
             // Check template syntax

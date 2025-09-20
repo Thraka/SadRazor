@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+  <name>SadRazor Documentation</name>
+  <version>1.0.0</version>
+  <description>Documentation generation project using SadRazor templating</description>
+  <maintainer>
+    <name>Development Team</name>
+    <contact>dev-team@company.com</contact>
+  </maintainer>
+  <sections>
+    <section id="getting-started">
+      <title>Getting Started</title>
+      <priority>1</priority>
+      <pages>
+        <page>
+          <filename>installation.md</filename>
+          <title>Installation Guide</title>
+        </page>
+        <page>
+          <filename>quick-start.md</filename>
+          <title>Quick Start Tutorial</title>
+        </page>
+      </pages>
+    </section>
+    <section id="api-reference">
+      <title>API Reference</title>
+      <priority>2</priority>
+      <pages>
+        <page>
+          <filename>template-engine.md</filename>
+          <title>Template Engine API</title>
+        </page>
+        <page>
+          <filename>cli-commands.md</filename>
+          <title>CLI Commands</title>
+        </page>
+      </pages>
+    </section>
+  </sections>
+  <buildSettings>
+    <outputFormat>markdown</outputFormat>
+    <includeTableOfContents>true</includeTableOfContents>
+    <generateIndex>true</generateIndex>
+  </buildSettings>
+</project>

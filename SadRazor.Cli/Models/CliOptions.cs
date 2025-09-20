@@ -32,6 +32,7 @@ public class BatchOptions : CliOptions
     public bool Recursive { get; set; }
     public string? ModelDirectory { get; set; }
     public string? TemplateDirectory { get; set; }
+    public string? OutputPattern { get; set; }
 }
 
 /// <summary>

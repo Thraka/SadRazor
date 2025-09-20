@@ -1,0 +1,46 @@
+{
+  "product": {
+    "name": "Widget Pro Max",
+    "sku": "WPM-2025-001",
+    "price": {
+      "amount": 299.99,
+      "currency": "USD"
+    }
+  },
+  "features": [
+    {
+      "name": "Advanced Analytics",
+      "description": "Real-time data processing and insights",
+      "category": "analytics"
+    },
+    {
+      "name": "Cloud Integration",
+      "description": "Seamless cloud connectivity and sync",
+      "category": "integration"
+    },
+    {
+      "name": "Mobile App",
+      "description": "iOS and Android companion apps",
+      "category": "mobile"
+    }
+  ],
+  "specifications": {
+    "dimensions": {
+      "width": 150,
+      "height": 75,
+      "depth": 25,
+      "unit": "mm"
+    },
+    "weight": {
+      "value": 0.8,
+      "unit": "kg"
+    },
+    "connectivity": ["WiFi", "Bluetooth 5.0", "USB-C"],
+    "batteryLife": "48 hours"
+  },
+  "availability": {
+    "inStock": true,
+    "regions": ["North America", "Europe", "Asia Pacific"],
+    "releaseDate": "2025-10-15"
+  }
+}

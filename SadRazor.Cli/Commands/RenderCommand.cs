@@ -12,10 +12,10 @@ public class RenderCommand : Command
 {
     public RenderCommand() : base("render", "Render a template with a model to produce Markdown output")
     {
-        // Template argument (required)
+        // Template argument (required, but can be resolved from config template directory)
         var templateArgument = new Argument<string>(
             name: "template",
-            description: "Path to the Razor template file (.cshtml)"
+            description: "Path to the Razor template file (.cshtml) - can be just filename if templateDirectory is set in config"
         );
 
         // Model option
@@ -86,68 +86,124 @@ public class RenderCommand : Command
     {
         try
         {
-            // Validate template file
-            if (!File.Exists(templatePath))
+            // Load configuration file if available
+            var config = await ConfigService.LoadConfigAsync();
+            var configPath = ConfigService.FindConfigFile();
+            
+            // Create CLI options object
+            var cliOptions = new RenderOptions
             {
-                Console.Error.WriteLine($"Error: Template file not found: {templatePath}");
+                TemplatePath = templatePath,
+                ModelPath = modelPath,
+                OutputPath = outputPath,
+                OutputDirectory = outputDirectory,
+                ModelFormat = format,
+                Force = force,
+                Verbose = verbose
+            };
+
+            // Merge with config file settings
+            var options = ConfigService.MergeRenderOptions(cliOptions, config, configPath);
+
+            // Resolve template path - combine with template directory if needed
+            string? resolvedTemplatePath = options.TemplatePath;
+            if (!string.IsNullOrEmpty(templatePath) && !string.IsNullOrEmpty(config?.TemplateDirectory))
+            {
+                // If template path is just a filename and we have a template directory, combine them
+                if (!Path.IsPathRooted(templatePath) && !templatePath.Contains(Path.DirectorySeparatorChar) && !templatePath.Contains(Path.AltDirectorySeparatorChar))
+                {
+                    var templateDir = !string.IsNullOrEmpty(config.TemplateDirectory) 
+                        ? Path.IsPathRooted(config.TemplateDirectory) 
+                            ? config.TemplateDirectory 
+                            : Path.GetFullPath(Path.Combine(Path.GetDirectoryName(configPath) ?? "", config.TemplateDirectory))
+                        : null;
+                    if (!string.IsNullOrEmpty(templateDir))
+                    {
+                        resolvedTemplatePath = Path.Combine(templateDir, templatePath);
+                    }
+                }
+            }
+
+            // Update options with resolved template path
+            options.TemplatePath = resolvedTemplatePath ?? templatePath;
+
+            if (options.Verbose)
+            {
+                if (config != null)
+                    Console.WriteLine($"Using config file: {configPath}");
+                else
+                    Console.WriteLine("No config file found, using command line options only.");
+            }
+
+            // Validate template file
+            if (!File.Exists(options.TemplatePath!))
+            {
+                Console.Error.WriteLine($"Error: Template file not found: {options.TemplatePath}");
                 return 1;
             }
 
-            if (verbose)
+            if (options.Verbose)
             {
-                Console.WriteLine($"Template: {templatePath}");
-                Console.WriteLine($"Model: {modelPath ?? "(none)"}");
-                Console.WriteLine($"Format: {format}");
+                Console.WriteLine($"Template: {options.TemplatePath}");
+                Console.WriteLine($"Model: {options.ModelPath ?? "(none)"}");
+                Console.WriteLine($"Format: {options.ModelFormat}");
             }
 
             // Load model if provided
             object? model = null;
-            if (!string.IsNullOrEmpty(modelPath))
+            if (!string.IsNullOrEmpty(options.ModelPath))
             {
-                if (!File.Exists(modelPath))
+                if (!File.Exists(options.ModelPath))
                 {
-                    Console.Error.WriteLine($"Error: Model file not found: {modelPath}");
-                    return 1;
+                    // Try appending the model path to the model path in options
+                    if (config?.ModelDirectory != null && File.Exists(Path.Combine(config.ModelDirectory, options.ModelPath)))
+                        options.ModelPath = Path.Combine(config.ModelDirectory, options.ModelPath);
+
+                    else
+                    {
+                        Console.Error.WriteLine($"Error: Model file not found: {options.ModelPath}");
+                        return 1;
+                    }
                 }
 
-                if (!ModelLoader.IsFormatSupported(modelPath) && format == "auto")
+                if (!ModelLoader.IsFormatSupported(options.ModelPath) && options.ModelFormat == "auto")
                 {
-                    Console.Error.WriteLine($"Error: Unsupported model file format: {Path.GetExtension(modelPath)}");
+                    Console.Error.WriteLine($"Error: Unsupported model file format: {Path.GetExtension(options.ModelPath)}");
                     Console.Error.WriteLine($"Supported formats: {string.Join(", ", ModelLoader.GetSupportedExtensions())}");
                     return 1;
                 }
 
-                if (verbose)
+                if (options.Verbose)
                     Console.WriteLine("Loading model...");
 
-                model = await ModelLoader.LoadFromFileAsync(modelPath, format);
+                model = await ModelLoader.LoadFromFileAsync(options.ModelPath, options.ModelFormat ?? "auto");
 
-                if (verbose)
+                if (options.Verbose)
                     Console.WriteLine("Model loaded successfully.");
             }
 
             // Create template engine
             var engine = new TemplateEngine();
 
-            if (verbose)
+            if (options.Verbose)
                 Console.WriteLine("Compiling template...");
 
             // Load and render template
-            var result = await engine.LoadTemplate(templatePath)
+            var result = await engine.LoadTemplate(options.TemplatePath!)
                 .WithModel(model)
                 .RenderAsync();
 
-            if (verbose)
+            if (options.Verbose)
                 Console.WriteLine("Template rendered successfully.");
 
             // Determine output path
-            var finalOutputPath = OutputManager.GenerateOutputPath(templatePath, modelPath, outputPath, outputDirectory);
+            var finalOutputPath = OutputManager.GenerateOutputPath(options.TemplatePath!, options.ModelPath, options.OutputPath, options.OutputDirectory);
 
-            if (verbose)
+            if (options.Verbose)
                 Console.WriteLine($"Output: {finalOutputPath}");
 
             // Check if we can write to output file
-            if (!OutputManager.CanWriteFile(finalOutputPath, force))
+            if (!OutputManager.CanWriteFile(finalOutputPath, options.Force))
             {
                 Console.Error.WriteLine($"Error: Output file already exists: {finalOutputPath}");
                 Console.Error.WriteLine("Use --force to overwrite existing files.");
@@ -155,13 +211,13 @@ public class RenderCommand : Command
             }
 
             // Write output file
-            await OutputManager.WriteFileAsync(finalOutputPath, result.Content, force);
+            await OutputManager.WriteFileAsync(finalOutputPath, result.Content, options.Force);
 
             // Success message
             var displayPath = OutputManager.GetDisplayPath(finalOutputPath);
             Console.WriteLine($"Successfully rendered template to: {displayPath}");
 
-            if (verbose)
+            if (options.Verbose)
             {
                 Console.WriteLine($"Output size: {result.Content.Length} characters");
             }
@@ -171,7 +227,21 @@ public class RenderCommand : Command
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error: {ex.Message}");
-            if (verbose)
+            
+            // Try to get verbose setting - either from merged options or fallback to CLI
+            var verboseMode = false;
+            try
+            {
+                var tempConfig = await ConfigService.LoadConfigAsync();
+                var tempOptions = ConfigService.MergeRenderOptions(new RenderOptions { Verbose = verbose }, tempConfig);
+                verboseMode = tempOptions.Verbose;
+            }
+            catch
+            {
+                verboseMode = verbose;
+            }
+            
+            if (verboseMode)
             {
                 Console.Error.WriteLine("Stack trace:");
                 Console.Error.WriteLine(ex.ToString());

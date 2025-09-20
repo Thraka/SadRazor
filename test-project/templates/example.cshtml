@@ -1,5 +1,4 @@
-﻿@model dynamic
-
+﻿@inherits TemplateBase<dynamic>
 # @Model.Title
 
 @Model.Description
@@ -9,16 +8,17 @@
 **Created:** @Model.CreatedDate  
 **Author:** @Model.Author
 
-@if (Model.Tags != null) {
-## Tags
-
-@foreach (var tag in Model.Tags) {
-- #@tag
-}
+@{
+    if (Model.Tags != null) {
+@:## Tags
+        foreach (var tag in Model.Tags) {
+@:- #@tag
+        }
+    }
 }
 
 @if (Model.Content != null) {
-## Content
+@:## Content
 
 @Model.Content
 }

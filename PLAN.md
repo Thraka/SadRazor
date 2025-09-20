@@ -124,10 +124,11 @@ Tests/
 
 ### Phase 3: More Features [NOT STARTED]
 
-- [ ] The SadRazor.CLI tool that supports the following features
-  - [ ] Generate output to a file in an output folder
-  - [ ] Input a JSON, YML, or XML file as the model
-  - [ ] Batch processing where you can specify a directory with a glob pattern for the model files
+- [x] The SadRazor.CLI tool that supports the following features
+  - [x] Generate output to a file in an output folder
+  - [x] Input a JSON, YML, or XML file as the model
+  - [x] Batch processing where you can specify a directory with a glob pattern for the model files
+  - [x] Add support for the sadrazor.json config file in the existing commands
 
 - [ ] Engine improvements
   - [ ] Can create a model based on JSON, YML, or XML strings and files.
@@ -225,4 +226,3 @@ Written by @Model.Author on @Model.Date.ToShortDateString()
 2. **Documentation** - Usage guides, API reference, and examples
 3. **Performance Optimization** - Benchmarking and optimization opportunities
 4. **Advanced Features** - Additional helper methods, caching improvements
-

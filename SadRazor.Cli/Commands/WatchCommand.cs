@@ -1,5 +1,6 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
+using SadRazor.Cli.Models;
 using SadRazor.Cli.Services;
 using SadRazorEngine;
 
@@ -135,6 +136,34 @@ public class WatchCommand : Command
     {
         try
         {
+            // Load configuration file if available
+            var config = await ConfigService.LoadConfigAsync();
+            var configPath = ConfigService.FindConfigFile();
+            
+            // Create CLI options object
+            var cliOptions = new WatchOptions
+            {
+                TemplatePath = templatePath,
+                ModelPath = modelPath,
+                OutputPath = outputPath,
+                OutputDirectory = outputDirectory,
+                WatchPaths = watchPaths,
+                ExcludePatterns = excludePatterns,
+                DebounceMs = debounceMs,
+                Force = force,
+                Verbose = verbose
+            };
+
+            // Merge with config file settings
+            var options = ConfigService.MergeWatchOptions(cliOptions, config, configPath);
+
+            if (options.Verbose)
+            {
+                if (config != null)
+                    Console.WriteLine($"Using config file: {configPath}");
+                else
+                    Console.WriteLine("No config file found, using command line options only.");
+            }
             // Validate template
             if (!File.Exists(templatePath))
             {

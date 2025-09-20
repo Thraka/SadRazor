@@ -1,0 +1,28 @@
+name: "Sample Blog Post"
+author:
+  firstName: "Jane"
+  lastName: "Doe"
+  email: "jane.doe@example.com"
+publishDate: "2025-09-19T10:30:00Z"
+categories:
+  - "Technology"
+  - "Programming"
+  - "Tutorial"
+metadata:
+  views: 1250
+  likes: 87
+  comments: 23
+  featured: true
+content:
+  summary: "A comprehensive guide to getting started with modern web development."
+  body: |
+    This is a multi-line content section that demonstrates
+    how YAML can handle complex text structures.
+    
+    It supports multiple paragraphs and maintains formatting.
+  readTimeMinutes: 8
+tags:
+  - slug: "web-dev"
+    displayName: "Web Development"
+  - slug: "beginner"
+    displayName: "Beginner Friendly"

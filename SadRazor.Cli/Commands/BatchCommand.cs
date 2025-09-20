@@ -1,5 +1,6 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
+using SadRazor.Cli.Models;
 using SadRazor.Cli.Services;
 using SadRazorEngine;
 
@@ -12,16 +13,17 @@ public class BatchCommand : Command
 {
     public BatchCommand() : base("batch", "Batch process multiple model files with a template")
     {
-        // Template argument (required)
-        var templateArgument = new Argument<string>(
+        // Template argument (required unless in config)
+        var templateArgument = new Argument<string?>(
             name: "template",
-            description: "Path to the Razor template file (.cshtml)"
+            description: "Path to the Razor template file (.cshtml) - can be specified in config file"
         );
+        templateArgument.SetDefaultValue(null);
 
-        // Model directory argument (required)
-        var modelDirArgument = new Argument<string>(
-            name: "model-directory",
-            description: "Directory containing model files to process"
+        // Model directory option (can come from config)
+        var modelDirOption = new Option<string?>(
+            aliases: ["--model-dir", "-m"],
+            description: "Directory containing model files to process (can be specified in config file)"
         );
 
         // Output directory option
@@ -31,16 +33,14 @@ public class BatchCommand : Command
         );
 
         // Model glob pattern option
-        var modelPatternOption = new Option<string>(
+        var modelPatternOption = new Option<string?>(
             aliases: ["--model-pattern", "-p"],
-            getDefaultValue: () => "**/*.{json,yml,yaml,xml}",
             description: "Glob pattern for model files (default: **/*.{json,yml,yaml,xml})"
         );
 
         // Output pattern option
-        var outputPatternOption = new Option<string>(
+        var outputPatternOption = new Option<string?>(
             aliases: ["--output-pattern"],
-            getDefaultValue: () => "{name}.md",
             description: "Output filename pattern. Supports {name}, {ext}, {dir} placeholders (default: {name}.md)"
         );
 
@@ -84,7 +84,7 @@ public class BatchCommand : Command
         );
 
         AddArgument(templateArgument);
-        AddArgument(modelDirArgument);
+        AddOption(modelDirOption);
         AddOption(outputDirOption);
         AddOption(modelPatternOption);
         AddOption(outputPatternOption);
@@ -98,10 +98,10 @@ public class BatchCommand : Command
         this.SetHandler(async (InvocationContext context) =>
         {
             var template = context.ParseResult.GetValueForArgument(templateArgument);
-            var modelDir = context.ParseResult.GetValueForArgument(modelDirArgument);
+            var modelDir = context.ParseResult.GetValueForOption(modelDirOption);
             var outputDir = context.ParseResult.GetValueForOption(outputDirOption);
-            var modelPattern = context.ParseResult.GetValueForOption(modelPatternOption) ?? "**/*.{json,yml,yaml,xml}";
-            var outputPattern = context.ParseResult.GetValueForOption(outputPatternOption) ?? "{name}.md";
+            var modelPattern = context.ParseResult.GetValueForOption(modelPatternOption);
+            var outputPattern = context.ParseResult.GetValueForOption(outputPatternOption);
             var recursive = context.ParseResult.GetValueForOption(recursiveOption);
             var force = context.ParseResult.GetValueForOption(forceOption);
             var parallel = context.ParseResult.GetValueForOption(parallelOption);
@@ -114,11 +114,11 @@ public class BatchCommand : Command
     }
 
     private static async Task<int> ExecuteAsync(
-        string templatePath,
-        string modelDirectory,
+        string? templatePath,
+        string? modelDirectory,
         string? outputDirectory,
-        string modelPattern,
-        string outputPattern,
+        string? modelPattern,
+        string? outputPattern,
         bool recursive,
         bool force,
         bool parallel,
@@ -128,39 +128,107 @@ public class BatchCommand : Command
     {
         try
         {
-            // Validate template file
-            if (!File.Exists(templatePath))
+            // Load configuration file if available
+            var config = await ConfigService.LoadConfigAsync();
+            var configPath = ConfigService.FindConfigFile();
+            
+            // Create CLI options object
+            var cliOptions = new BatchOptions
             {
-                Console.Error.WriteLine($"Error: Template file not found: {templatePath}");
+                TemplatePath = templatePath,
+                ModelDirectory = modelDirectory,
+                OutputDirectory = outputDirectory,
+                ModelGlobPattern = modelPattern,
+                TemplateGlobPattern = "**/*.cshtml", // Not exposed in CLI but used in config
+                OutputPattern = outputPattern,
+                Recursive = recursive,
+                Force = force,
+                Verbose = verbose
+            };
+
+            // Merge with config file settings
+            var options = ConfigService.MergeBatchOptions(cliOptions, config, configPath);
+
+            if (options.Verbose)
+            {
+                if (config != null)
+                    Console.WriteLine($"Using config file: {configPath}");
+                else
+                    Console.WriteLine("No config file found, using command line options only.");
+            }
+
+            // Resolve template path - combine with template directory if needed
+            string? resolvedTemplatePath = options.TemplatePath;
+            if (!string.IsNullOrEmpty(templatePath) && !string.IsNullOrEmpty(config?.TemplateDirectory))
+            {
+                // If template path is just a filename and we have a template directory, combine them
+                if (!Path.IsPathRooted(templatePath) && !templatePath.Contains(Path.DirectorySeparatorChar) && !templatePath.Contains(Path.AltDirectorySeparatorChar))
+                {
+                    var templateDir = !string.IsNullOrEmpty(config.TemplateDirectory) 
+                        ? Path.IsPathRooted(config.TemplateDirectory) 
+                            ? config.TemplateDirectory 
+                            : Path.GetFullPath(Path.Combine(Path.GetDirectoryName(configPath) ?? "", config.TemplateDirectory))
+                        : null;
+                    if (!string.IsNullOrEmpty(templateDir))
+                    {
+                        resolvedTemplatePath = Path.Combine(templateDir, templatePath);
+                    }
+                }
+            }
+
+            // Validate required parameters (from CLI or config)
+            if (string.IsNullOrEmpty(resolvedTemplatePath))
+            {
+                Console.Error.WriteLine("Error: Template path is required. Specify it as:");
+                Console.Error.WriteLine("  - Command line argument: batch <template-path> <model-directory>");
+                Console.Error.WriteLine("  - Config file: set templateDirectory and use: batch <template-filename> <model-directory>");
+                return 1;
+            }
+
+            if (string.IsNullOrEmpty(options.ModelDirectory))
+            {
+                Console.Error.WriteLine("Error: Model directory is required. Specify it via:");
+                Console.Error.WriteLine("  - Command line argument: batch <template> <model-directory>");
+                Console.Error.WriteLine("  - Config file: set modelDirectory and use: batch <template>");
+                return 1;
+            }
+
+            // Update options with resolved template path
+            options.TemplatePath = resolvedTemplatePath;
+
+            // Validate template file
+            if (!File.Exists(options.TemplatePath!))
+            {
+                Console.Error.WriteLine($"Error: Template file not found: {options.TemplatePath}");
                 return 1;
             }
 
             // Validate model directory
-            if (!Directory.Exists(modelDirectory))
+            if (!Directory.Exists(options.ModelDirectory!))
             {
-                Console.Error.WriteLine($"Error: Model directory not found: {modelDirectory}");
+                Console.Error.WriteLine($"Error: Model directory not found: {options.ModelDirectory}");
                 return 1;
             }
 
-            if (verbose)
+            if (options.Verbose)
             {
-                Console.WriteLine($"Template: {templatePath}");
-                Console.WriteLine($"Model Directory: {modelDirectory}");
-                Console.WriteLine($"Output Directory: {outputDirectory ?? "(same as model directory)"}");
-                Console.WriteLine($"Model Pattern: {modelPattern}");
-                Console.WriteLine($"Output Pattern: {outputPattern}");
-                Console.WriteLine($"Recursive: {recursive}");
+                Console.WriteLine($"Template: {options.TemplatePath}");
+                Console.WriteLine($"Model Directory: {options.ModelDirectory}");
+                Console.WriteLine($"Output Directory: {options.OutputDirectory ?? "(same as model directory)"}");
+                Console.WriteLine($"Model Pattern: {options.ModelGlobPattern}");
+                Console.WriteLine($"Output Pattern: {options.OutputPattern}");
+                Console.WriteLine($"Recursive: {options.Recursive}");
                 Console.WriteLine($"Parallel: {parallel} (max: {maxParallelism})");
                 Console.WriteLine($"Dry Run: {dryRun}");
                 Console.WriteLine();
             }
 
             // Find model files
-            var modelFiles = FindModelFiles(modelDirectory, modelPattern, recursive);
+            var modelFiles = FindModelFiles(options.ModelDirectory!, options.ModelGlobPattern ?? "**/*.{json,yml,yaml,xml}", options.Recursive);
 
             if (modelFiles.Count == 0)
             {
-                Console.WriteLine($"No model files found matching pattern: {modelPattern}");
+                Console.WriteLine($"No model files found matching pattern: {options.ModelGlobPattern}");
                 return 0;
             }
 
@@ -169,17 +237,17 @@ public class BatchCommand : Command
             // Generate output paths
             var processingPairs = OutputManager.GenerateBatchOutputPaths(
                 modelFiles,
-                templatePath,
-                outputDirectory,
-                outputPattern
+                options.TemplatePath!,
+                options.OutputDirectory,
+                options.OutputPattern! // Set by ConfigService.MergeBatchOptions
             );
 
-            if (verbose || dryRun)
+            if (options.Verbose || dryRun)
             {
                 Console.WriteLine("\nProcessing plan:");
                 foreach (var pair in processingPairs)
                 {
-                    var modelDisplay = OutputManager.GetDisplayPath(pair.Key, modelDirectory);
+                    var modelDisplay = OutputManager.GetDisplayPath(pair.Key, options.ModelDirectory!);
                     var outputDisplay = OutputManager.GetDisplayPath(pair.Value);
                     Console.WriteLine($"  {modelDisplay} → {outputDisplay}");
                 }
@@ -193,7 +261,7 @@ public class BatchCommand : Command
             }
 
             // Check for existing files if force is not set
-            if (!force)
+            if (!options.Force)
             {
                 var existingFiles = processingPairs.Values.Where(File.Exists).ToList();
                 if (existingFiles.Count > 0)
@@ -216,11 +284,11 @@ public class BatchCommand : Command
             var startTime = DateTime.Now;
             var results = await ProcessFiles(
                 processingPairs,
-                templatePath,
+                options.TemplatePath!,
                 parallel,
                 maxParallelism,
-                force,
-                verbose
+                options.Force,
+                options.Verbose
             );
 
             var duration = DateTime.Now - startTime;
@@ -236,7 +304,7 @@ public class BatchCommand : Command
             {
                 Console.WriteLine($"❌ Failed: {failed}");
                 
-                if (verbose)
+                if (options.Verbose)
                 {
                     Console.WriteLine("\nFailed files:");
                     foreach (var result in results.Where(r => !r.Success))
@@ -253,7 +321,21 @@ public class BatchCommand : Command
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error: {ex.Message}");
-            if (verbose)
+            
+            // Try to get verbose setting from config/options
+            var verboseMode = false;
+            try
+            {
+                var tempConfig = await ConfigService.LoadConfigAsync();
+                var tempOptions = ConfigService.MergeBatchOptions(new BatchOptions { Verbose = verbose }, tempConfig);
+                verboseMode = tempOptions.Verbose;
+            }
+            catch
+            {
+                verboseMode = verbose;
+            }
+            
+            if (verboseMode)
             {
                 Console.Error.WriteLine("Stack trace:");
                 Console.Error.WriteLine(ex.ToString());

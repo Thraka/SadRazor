@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+  <Title>My First SadRazor Document</Title>
+  <Description>This is an example document created with SadRazor templating engine.</Description>
+  <Author>Your Name</Author>
+  <CreatedDate>2025-09-19</CreatedDate>
+  <Tags>
+    <Tag>sadrazor</Tag>
+    <Tag>markdown</Tag>
+    <Tag>template</Tag>
+  </Tags>
+  <Content>This content section demonstrates how to use dynamic models in your templates. You can add any data structure here and access it from your Razor templates.</Content>
+</root>

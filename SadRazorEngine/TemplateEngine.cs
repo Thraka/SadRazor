@@ -62,19 +62,30 @@ public class TemplateEngine : ITemplateEngine
         {
             var typeName = modelMatch.Groups["type"].Value.Trim();
 
-            // Try resolve the type by scanning loaded assemblies
-            modelType = Type.GetType(typeName, false)
-                        ?? AppDomain.CurrentDomain.GetAssemblies()
-                            .Select(a => a.GetType(typeName, false))
-                            .FirstOrDefault(t => t != null);
-
-            if (modelType == null)
+            // If the template explicitly declares `@model dynamic` treat it the same
+            // as omitting @model: remove the directive so runtime behavior and
+            // cache keys are normalized.
+            if (string.Equals(typeName, "dynamic", StringComparison.OrdinalIgnoreCase))
             {
-                // Try simple (unqualified) name match as a last resort
-                foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+                processed = Regex.Replace(processed, @"(?m)^\s*@model\s+dynamic\b.*(?:\r?\n)?", "", RegexOptions.IgnoreCase);
+                modelType = null;
+            }
+            else
+            {
+                // Try resolve the type by scanning loaded assemblies
+                modelType = Type.GetType(typeName, false)
+                            ?? AppDomain.CurrentDomain.GetAssemblies()
+                                .Select(a => a.GetType(typeName, false))
+                                .FirstOrDefault(t => t != null);
+
+                if (modelType == null)
                 {
-                    modelType = asm.GetTypes().FirstOrDefault(t => t.FullName == typeName || t.Name == typeName);
-                    if (modelType != null) break;
+                    // Try simple (unqualified) name match as a last resort
+                    foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+                    {
+                        modelType = asm.GetTypes().FirstOrDefault(t => t.FullName == typeName || t.Name == typeName);
+                        if (modelType != null) break;
+                    }
                 }
             }
         }

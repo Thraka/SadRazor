@@ -27,10 +27,7 @@ public class ConfigFile
     /// </summary>
     public string? DefaultModelFormat { get; set; } = "auto";
 
-    /// <summary>
-    /// Watch configuration
-    /// </summary>
-    public WatchConfig? Watch { get; set; }
+
 
     /// <summary>
     /// Batch processing configuration
@@ -41,27 +38,6 @@ public class ConfigFile
     /// Global settings
     /// </summary>
     public GlobalSettings? Settings { get; set; }
-}
-
-/// <summary>
-/// Watch-specific configuration
-/// </summary>
-public class WatchConfig
-{
-    /// <summary>
-    /// Debounce time in milliseconds
-    /// </summary>
-    public int DebounceMs { get; set; } = 500;
-
-    /// <summary>
-    /// Patterns to exclude from watching
-    /// </summary>
-    public string[]? ExcludePatterns { get; set; }
-
-    /// <summary>
-    /// Whether to watch subdirectories
-    /// </summary>
-    public bool Recursive { get; set; } = true;
 }
 
 /// <summary>

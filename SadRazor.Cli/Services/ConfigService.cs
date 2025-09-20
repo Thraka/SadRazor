@@ -85,8 +85,7 @@ public class ConfigService
             OutputDirectory = ResolveDirectory(cliOptions.OutputDirectory, config.OutputDirectory, configPath),
             ModelFormat = cliOptions.ModelFormat ?? config.DefaultModelFormat,
             Force = cliOptions.Force || (config.Settings?.Force ?? false),
-            Verbose = cliOptions.Verbose || (config.Settings?.Verbose ?? false),
-            Watch = cliOptions.Watch
+            Verbose = cliOptions.Verbose || (config.Settings?.Verbose ?? false)
         };
 
         return result;
@@ -136,33 +135,6 @@ public class ConfigService
         // If config has a template directory, we can't auto-resolve without knowing the specific template name
         // This would need to be specified by the user or we'd need a default template name in config
         return null;
-    }
-
-    /// <summary>
-    /// Merges command-line options with configuration file settings for watch command
-    /// Command-line options take precedence over config file settings
-    /// </summary>
-    public static WatchOptions MergeWatchOptions(WatchOptions cliOptions, ConfigFile? config, string? configPath = null)
-    {
-        if (config == null)
-        {
-            return cliOptions;
-        }
-
-        var result = new WatchOptions
-        {
-            TemplatePath = cliOptions.TemplatePath,
-            ModelPath = cliOptions.ModelPath,
-            OutputPath = cliOptions.OutputPath,
-            OutputDirectory = ResolveDirectory(cliOptions.OutputDirectory, config.OutputDirectory, configPath),
-            WatchPaths = cliOptions.WatchPaths,
-            ExcludePatterns = cliOptions.ExcludePatterns ?? config.Watch?.ExcludePatterns,
-            DebounceMs = cliOptions.DebounceMs != 500 ? cliOptions.DebounceMs : (config.Watch?.DebounceMs ?? 500), // 500 is default
-            Force = cliOptions.Force || (config.Settings?.Force ?? false),
-            Verbose = cliOptions.Verbose || (config.Settings?.Verbose ?? false)
-        };
-
-        return result;
     }
 
     /// <summary>

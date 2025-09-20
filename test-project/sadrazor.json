@@ -3,16 +3,6 @@
   "modelDirectory": "models",
   "outputDirectory": "output",
   "defaultModelFormat": "auto",
-  "watch": {
-    "debounceMs": 500,
-    "excludePatterns": [
-      "**/node_modules/**",
-      "**/bin/**",
-      "**/obj/**",
-      "**/.git/**"
-    ],
-    "recursive": true
-  },
   "batch": {
     "modelGlobPattern": "**/*.{json,yml,yaml,xml}",
     "templateGlobPattern": "**/*.cshtml",

@@ -478,16 +478,6 @@ public class InitCommand : Command
   "modelDirectory": "models",
   "outputDirectory": "output",
   "defaultModelFormat": "auto",
-  "watch": {
-    "debounceMs": 500,
-    "excludePatterns": [
-      "**/node_modules/**",
-      "**/bin/**",
-      "**/obj/**",
-      "**/.git/**"
-    ],
-    "recursive": true
-  },
   "batch": {
     "modelGlobPattern": "**/*.{json,yml,yaml,xml}",
     "templateGlobPattern": "**/*.cshtml",
@@ -543,9 +533,6 @@ sadrazor render templates/example.cshtml --model models/example.json --output RE
 
 # Batch process all models
 sadrazor batch templates/example.cshtml models/
-
-# Watch for changes and auto-regenerate
-sadrazor watch templates/ models/ --output output/
 ```
 
 ## Project Type: {projectType}
@@ -558,7 +545,6 @@ Edit `sadrazor.json` to customize:
 
 - Default directories
 - Output patterns
-- Watch settings
 - Batch processing options
 
 ## Learn More

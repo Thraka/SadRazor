@@ -2,6 +2,7 @@ using System.CommandLine;
 using SadRazor.Cli.Models;
 using SadRazor.Cli.Services;
 using SadRazorEngine;
+using SadRazorEngine.Core.Models;
 using SadRazorEngine.Extensions;
 
 namespace SadRazor.Cli.Commands;
@@ -137,22 +138,31 @@ public class ValidateCommand : Command
             }
 
             // Check model if provided
-            object? model = null;
-            if (!string.IsNullOrEmpty(modelPath))
+            if (checkModel)
             {
-                model = await ValidateModel(modelPath, format, validationErrors, validationWarnings, verbose);
-            }
+                if (string.IsNullOrEmpty(modelPath))
+                    validationErrors.Add("Model check requested but no model file provided.");
+                else
+                {
+                    bool modelLoaded = await ValidateModel(modelPath, format, validationErrors, validationWarnings, verbose);
 
-            // Check model compatibility with template
-            if (checkModel && !string.IsNullOrEmpty(modelPath) && model != null)
-            {
-                await ValidateModelCompatibility(templatePath, model, validationErrors, validationWarnings, verbose);
+                    if (!modelLoaded)
+                    {
+                        validationErrors.Add("Model validation failed; skipping model compatibility check.");
+                        checkModel = false; // Skip further model checks
+                    }
+
+                    await ValidateModelCompatibility(templatePath, modelPath, validationErrors, validationWarnings, verbose);
+                }
             }
 
             // Check output generation
             if (checkOutput)
             {
-                await ValidateOutput(templatePath, model, validationErrors, validationWarnings, verbose);
+                if (string.IsNullOrEmpty(modelPath))
+                    validationErrors.Add("Model check requested but no model file provided.");
+                else
+                    await ValidateOutput(templatePath, modelPath, validationErrors, validationWarnings, verbose);
             }
 
             return ReportResults(validationErrors, validationWarnings, verbose);
@@ -201,7 +211,7 @@ public class ValidateCommand : Command
         }
     }
 
-    private static async Task<object?> ValidateModel(
+    private static async Task<bool> ValidateModel(
         string modelPath,
         string format,
         List<string> errors,
@@ -216,7 +226,7 @@ public class ValidateCommand : Command
             if (!File.Exists(modelPath))
             {
                 errors.Add($"Model file not found: {modelPath}");
-                return null;
+                return false;
             }
 
             // Use engine's model loading capabilities
@@ -232,18 +242,18 @@ public class ValidateCommand : Command
                 Console.WriteLine("✓ Model loaded successfully");
 
             // Return a placeholder since we're using the engine's validation now
-            return new { Success = true };
+            return true;
         }
         catch (Exception ex)
         {
             errors.Add($"Model validation error: {ex.Message}");
-            return null;
+            return false;
         }
     }
 
     private static async Task ValidateModelCompatibility(
         string templatePath,
-        object model,
+        string modelPath,
         List<string> errors,
         List<string> warnings,
         bool verbose)
@@ -255,15 +265,12 @@ public class ValidateCommand : Command
         {
             // Use engine's built-in validation system
             var engine = new TemplateEngine();
-            var validationResult = await engine.ValidateTemplateWithModelFileAsync(templatePath, "");
-            
+            ValidationResult validationResult;
+
             // If we have a model, do a more comprehensive validation
-            if (model != null)
-            {
-                var context = engine.LoadTemplate(templatePath);
-                context = context.WithModel(model);
-                validationResult = await context.ValidateAsync();
-            }
+            var context = engine.LoadTemplate(templatePath);
+            context = await context.WithModelFromFileAsync(modelPath);
+            validationResult = await context.ValidateAsync();
 
             if (!validationResult.IsValid)
             {
@@ -277,6 +284,7 @@ public class ValidateCommand : Command
             {
                 warnings.Add($"Validation warning: {warning.Message}");
             }
+            
 
             if (verbose)
                 Console.WriteLine("✓ Model compatibility checked using engine validation");
@@ -289,7 +297,7 @@ public class ValidateCommand : Command
 
     private static async Task ValidateOutput(
         string templatePath,
-        object? model,
+        string modelPath,
         List<string> errors,
         List<string> warnings,
         bool verbose)
@@ -299,10 +307,9 @@ public class ValidateCommand : Command
 
         try
         {
-            var engine = new TemplateEngine();
-            var result = await engine.LoadTemplate(templatePath)
-                .WithModel(model)
-                .RenderAsync();
+            var engine = new TemplateEngine().LoadTemplate(templatePath);
+            engine = await engine.WithModelFromFileAsync(modelPath);
+            var result = await engine.RenderAsync();
 
             if (string.IsNullOrWhiteSpace(result.Content))
             {

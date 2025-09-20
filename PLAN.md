@@ -49,7 +49,6 @@ SadRazor.Cli/
 ├── Program.cs (entry point)
 ├── Commands/
 │   ├── RenderCommand.cs
-│   ├── WatchCommand.cs
 │   ├── InitCommand.cs (scaffold new projects)
 │   └── ValidateCommand.cs
 ├── Models/
@@ -57,7 +56,6 @@ SadRazor.Cli/
 │   └── ConfigFile.cs
 └── Services/
     ├── ModelLoader.cs (JSON/YAML/XML)
-    ├── FileWatcher.cs
     └── OutputManager.cs
 
 Testbed/                              # Top-level sample/demo app used during development and authoring

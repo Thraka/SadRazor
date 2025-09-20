@@ -19,7 +19,6 @@ public class CliOptions
 public class RenderOptions : CliOptions
 {
     public string? ModelFormat { get; set; } // json, yaml, xml, auto
-    public bool Watch { get; set; }
 }
 
 /// <summary>
@@ -33,16 +32,6 @@ public class BatchOptions : CliOptions
     public string? ModelDirectory { get; set; }
     public string? TemplateDirectory { get; set; }
     public string? OutputPattern { get; set; }
-}
-
-/// <summary>
-/// Options for watch command
-/// </summary>
-public class WatchOptions : CliOptions
-{
-    public string[]? WatchPaths { get; set; }
-    public string[]? ExcludePatterns { get; set; }
-    public int DebounceMs { get; set; } = 500;
 }
 
 /// <summary>

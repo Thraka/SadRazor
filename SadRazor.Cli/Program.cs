@@ -15,7 +15,6 @@ public class Program
         // Add commands
         rootCommand.AddCommand(new RenderCommand());
         rootCommand.AddCommand(new BatchCommand());
-        rootCommand.AddCommand(new WatchCommand());
         rootCommand.AddCommand(new InitCommand());
         rootCommand.AddCommand(new ValidateCommand());
 

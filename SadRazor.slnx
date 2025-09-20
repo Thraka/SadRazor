@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Files/">
+    <File Path="PLAN.md" />
+  </Folder>
   <Project Path="Authoring/Authoring.csproj" />
   <Project Path="c:/Code/Fun/SadRazor/SadRazorEngine/SadRazorEngine.csproj" />
   <Project Path="c:/Code/Fun/SadRazor/Testbed/Testbed.csproj" />

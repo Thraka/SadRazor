@@ -94,7 +94,7 @@ public class OutputManagerTests : IDisposable
         // Arrange
         var fullTemplatePath = Path.Combine(_tempDirectory, templatePath);
         var fullModelPath = string.IsNullOrEmpty(modelPath) ? null : Path.Combine(_tempDirectory, modelPath);
-        var fullOutputDirectory = string.IsNullOrEmpty(outputDirectory) ? null : Path.Combine(_tempDirectory, outputDirectory);
+        var fullOutputDirectory = string.IsNullOrEmpty(outputDirectory) ? _tempDirectory : Path.Combine(_tempDirectory, outputDirectory);
 
         // Act
         var result = OutputManager.GenerateOutputPath(fullTemplatePath, fullModelPath, outputPath, fullOutputDirectory);
@@ -125,17 +125,17 @@ public class OutputManagerTests : IDisposable
 
         // Assert
         result.Should().HaveCount(3);
-        result[modelPaths[0]].Should().EndWith("output/model1.md");
-        result[modelPaths[1]].Should().EndWith("output/model2.md");
-        result[modelPaths[2]].Should().EndWith("output/model3.md");
+        result[modelPaths[0]].Should().EndWith(Path.Combine("output", "model1.md"));
+        result[modelPaths[1]].Should().EndWith(Path.Combine("output", "model2.md"));
+        result[modelPaths[2]].Should().EndWith(Path.Combine("output", "model3.md"));
     }
 
     [Theory]
-    [InlineData("test.md", false, false)]
-    [InlineData("nonexistent.md", false, true)]
-    [InlineData("existing.md", true, true)]
+    [InlineData("nonexistent.md", false, false, true)]
+    [InlineData("existing-noforce.md", true, false, false)]
+    [InlineData("existing-force.md", true, true, true)]
     public void CanWriteFile_WithVariousConditions_ShouldReturnCorrectResult(
-        string fileName, bool createFile, bool expectedResult)
+        string fileName, bool createFile, bool force, bool expectedResult)
     {
         // Arrange
         var filePath = Path.Combine(_tempDirectory, fileName);
@@ -145,7 +145,7 @@ public class OutputManagerTests : IDisposable
         }
 
         // Act
-        var result = OutputManager.CanWriteFile(filePath, force: true);
+        var result = OutputManager.CanWriteFile(filePath, force);
 
         // Assert
         result.Should().Be(expectedResult);

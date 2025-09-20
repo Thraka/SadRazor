@@ -37,22 +37,14 @@ public class OutputManager
     /// </summary>
     public static string GenerateOutputPath(string templatePath, string? modelPath, string? outputPath, string? outputDirectory)
     {
-        // If explicit output path is provided, use it
-        if (!string.IsNullOrEmpty(outputPath))
-        {
-            return Path.GetFullPath(outputPath);
-        }
-
         // Determine base name for output file
-        string baseName;
-        if (!string.IsNullOrEmpty(modelPath))
-        {
-            baseName = Path.GetFileNameWithoutExtension(modelPath);
-        }
+        string outputName;
+        if (!string.IsNullOrEmpty(outputPath))
+            outputName = outputPath;
+        else if (!string.IsNullOrEmpty(modelPath))
+            outputName = $"{Path.GetFileNameWithoutExtension(modelPath)}.md";
         else
-        {
-            baseName = Path.GetFileNameWithoutExtension(templatePath);
-        }
+            outputName = $"{Path.GetFileNameWithoutExtension(templatePath)}.md";
 
         // Determine output directory
         string outputDir;
@@ -70,7 +62,7 @@ public class OutputManager
         }
 
         // Generate output file path with .md extension
-        return Path.Combine(outputDir, $"{baseName}.md");
+        return Path.Combine(outputDir, outputName);
     }
 
     /// <summary>

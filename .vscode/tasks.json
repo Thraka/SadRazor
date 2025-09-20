@@ -2,12 +2,14 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "build authoring",
-      "command": "dotnet",
-      "type": "process",
-      "args": ["build", "${workspaceFolder}/Authoring/Authoring.csproj"],
+      "label": "Test Authoring Sample",
+      "type": "shell",
+      "command": "dotnet run --project \"${workspaceFolder}\\Authoring\\Authoring.csproj\" -- \"${workspaceFolder}\\Authoring\\Views\\Samples\\Example.cshtml\"",
       "problemMatcher": ["$msCompile"],
-      "group": { "kind": "build", "isDefault": false }
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
     },
     {
       "label": "Run SadRazorEngine tests",
